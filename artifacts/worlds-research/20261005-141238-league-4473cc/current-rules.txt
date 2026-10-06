@@ -1,0 +1,60 @@
+**Build the first version around public timers and observed events. Keep enemy-path, wave-state and “safe to fight” claims disabled until their required evidence exists.**
+
+Research date: **October 5, 2026**. Riot’s schedule places live play on **26.19**, with 26.20 scheduled for October 7. These findings concern standard PC Summoner’s Rift; Swiftplay, Classic, ARAM and tournament patches require separate rules. [Riot patch schedule](https://support.riotgames.com/en-us/league-of-legends/gameplay/patch-schedule-league-of-legends)
+
+The table contains verified patch checkpoints, not a certification that every intervening change has been audited.
+
+| Area | Verified rule and implementation consequence |
+|---|---|
+| Initial jungle spawns | **26.1:** wolves, blue, red and raptors **0:55**; Krugs/Gromp **1:07**; Scuttlers **2:55**. A scheduled spawn does not prove a camp remains alive. [26.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/) |
+| Ordinary camp respawns | **11.10** established **2:15** camp respawns. Treat this as historical support for small-camp timing, not proof that every camp shares that interval. Start countdowns from verified camp-clear evidence. [11.10](https://www.leagueoflegends.com/en-us/news/game-updates/patch-11-10-notes/) |
+| Lane waves | **26.1:** first spawn **0:30**, first cannon **wave 3**; intervals become **25 seconds at 14:00**, **20 seconds at 30:00**, with composition reductions. Spawn schedules cannot establish wave position, crashes or freezes. [26.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/) |
+| Minion behavior | **26.10:** attacking an enemy minion no longer adds the attacking champion to opposing minions’ aggro priority list. Old wave-manipulation advice needs review. [26.10](https://www.leagueoflegends.com/en-us/news/game-updates/league-of-legends-patch-26-10-notes/) |
+| Dragon/Elder | **9.23:** dragon first spawns **5:00**, respawns **5 minutes after death**; one team’s fourth elemental dragon triggers Elder **6 minutes later**, with subsequent Elder respawns **6 minutes after death**. These are historical baseline rules requiring current-client validation. [9.23](https://www.leagueoflegends.com/en-us/news/game-updates/patch-9-23-notes/) |
+| Grubs/Herald | **25.09:** Grubs **8:00**, **no respawn**; Herald **15:00**. [25.09](https://www.leagueoflegends.com/en-us/news/game-updates/patch-25-09-notes/) |
+| Baron/Atakhan | **26.1:** Baron first spawn **20:00**; Atakhan removed. Other epic first-spawn times unchanged. [26.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/) |
+| Vision | **26.1:** Faelight wards gain **25% vision radius** and a location-specific bonus region for **45 seconds**, potentially covering brush; nearsight suppresses these bonuses. Static circular ward models are insufficient. [26.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/) |
+
+**Teleport needs separate rules for spell variant, role quest and patch.**
+
+- **25.S1.1:** early Teleport regained ward/minion targeting; channel became **3 seconds**, followed by travel rather than an instant blink; base cooldown became **300 seconds**. Do not teach “early TP only targets towers.” [25.S1.1](https://www.leagueoflegends.com/en-us/news/game-updates/patch-25-s1-1-notes/)
+- **26.12:** top quest’s Teleport shield changed to **35% maximum health for 10 seconds**. [26.12](https://www.leagueoflegends.com/en-us/news/game-updates/league-of-legends-patch-26-12-notes/)
+- **26.19:** top quest’s free TP cooldown is **390 seconds**; upgraded Unleashed TP **300–210 seconds**; non-top Unleashed remains **330–240 seconds**. These are base rules, not observed readiness. [26.19](https://www.leagueoflegends.com/en-us/news/game-updates/league-of-legends-patch-26-19-notes/)
+
+Champion movement needs its own capability catalog. Riot describes **Shen’s ally-targeted relocation** and **Twisted Fate’s reveal plus Gate teleport**; champion identity establishes potential capability, not a learned spell, available cooldown or impending arrival. Current numerical ranges, channels and interruption conditions were not fully verified here. Queue Shen, TF, Ryze, Galio, Pantheon, Nocturne and Taliyah for individual validation rather than labeling all movement “global.” [Riot Shen description](https://pre-blades-bw-testing.leagueoflegends.com/en-us/champions/shen/), [Riot Twisted Fate description](https://www.leagueoflegends.com/en-gb/champions/twistedfate/)
+
+The live-data audit is **documentation-based; no running match or provider was tested**.
+
+| Source | Documented observable facts | Unsupported conclusions |
+|---|---|---|
+| Riot local Live Client Data API | `https://127.0.0.1:2999/liveclientdata/`: game time/map/mode; local health, resources, gold, ability ranks; player champions, levels, items, scores, death/respawn state and summoner-spell identities. | `position: "MIDDLE"` is a role label, not coordinates. No documented champion-coordinate stream, wave-unit state, ward map, visibility grid, or spell cooldown/readiness fields. [Riot API](https://developer.riotgames.com/docs/lol#game-client-api) |
+| Riot event data | Timestamped champion, turret, inhibitor, dragon, Herald and Baron kills; dragon type and participants appear in samples. | A kill event does not identify current enemy position. The sample list does not establish support for ordinary camp deaths or Grub events. [Official event samples](https://static.developer.riotgames.com/docs/lol/liveclientdata_events.json) |
+| Overwolf League GEP | Additional local ability activation/readiness, minion counters, camp `alive`/`vision`/`icon_status`, and team-frame ultimate cooldown data. | `ability` can mean selection followed by cancellation; distinguish `usedAbility`. Camp `vision` updates when alive state changes, so it is not continuous visibility. Camp IDs can change: identify by name. Four team-frame slots are not an enemy-ultimate feed. [Overwolf documentation](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/league-of-legends/) |
+
+Overwolf’s documentation still lists Atakhan, demonstrating that **schema support does not prove current gameplay relevance**. It also says camp alive information applies regardless of which team killed it; that wording alone does not establish permission to reveal an unseen enemy clear. Keep ambiguous hidden-state fields out of coaching pending validation. [Overwolf documentation](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/league-of-legends/)
+
+Policy materially affects the design. Riot prohibits enemy ultimate tracking, including manual tracking, and asks products to preserve player decisions; products serving players must register. [Riot policy](https://developer.riotgames.com/docs/lol#game-integrity) Riot also announced official APIs as the allowed route for game-data retrieval, with a transition grace period until **April 2027 for existing developers**. Do not assume that grace period authorizes this new app or guarantees Overwolf fields will survive. [Riot memory-access announcement](https://support.riotgames.com/en-us/riot/performance/game-memory-access-removed-for-third-party-apps)
+
+Implement in stages:
+
+1. **Rules and evidence model:** store patch, mode, source URL, verification status and effective interval. Every live fact carries provider, game timestamp, freshness and classification: `observed`, `scheduled`, `inferred`, or `unknown`. Unsupported patch/mode combinations disable affected advice.
+2. **Riot-only baseline:** implement clock, personal status and major-event summaries. Deduplicate events and recover after reconnects. Say “scheduled to spawn,” not “alive.” Present choices and prerequisites instead of unsupported commands.
+3. **Optional Overwolf adapter:** validate provider health and field semantics in controlled matches. Enable only permitted, demonstrated features. An outage must yield `unknown`, never “camp dead” or “ability ready.”
+4. **Postgame coaching first for spatial claims:** validate wave, movement and vision reasoning against explicitly labeled recordings. Live spatial coaching remains disabled until both data access and policy support it.
+
+Required regression tests:
+
+| Fixture | Required result |
+|---|---|
+| Standard SR at 0:54/0:55, 1:06/1:07, 2:54/2:55 | Correct scheduled boundaries; no invented camp kill or jungler route. |
+| First three waves; boundaries at 14:00 and 30:00 | Correct configured wave schedule; no inferred crash, freeze or lane priority. |
+| Two different jungle routes producing identical CS | No unique path/location claim. |
+| Camp discovered dead; stale `vision`; delayed update | No invented death timestamp or exact respawn countdown. |
+| Duplicate dragon kill; reconnect with incomplete history | No double-counted soul; missing history produces uncertainty. |
+| Early ward-target TP; quest incomplete/complete | No obsolete targeting restriction or premature quest reward. |
+| Local R unlearned; enemy reaches level six | No “ultimate ready” or “incoming global” assertion. |
+| `ability` followed by cancellation | No successful-cast assumption. |
+| Missing ward/coordinate data | No “river is clear,” “enemy cannot reach,” or “safe objective” claim. |
+| Wrong mode, new patch, provider outage | Affected coaching fails closed. |
+
+**Remaining source limits:** I did not establish a complete current Riot-primary chain for red/blue, Scuttler and Baron respawn intervals, partial-clear behavior, Herald/Grub despawn exceptions, every Teleport transition, or every champion movement detail. Leave those rules unverified until checked against current official data and controlled matches. This was source research—not a Worlds VOD review—and no files or credentials were read or changed.

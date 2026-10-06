@@ -1,0 +1,22 @@
+{
+  "top": {
+    "status": "reported",
+    "report": "top.md"
+  },
+  "bot": {
+    "status": "reported",
+    "report": "bot.md"
+  },
+  "jungle": {
+    "status": "reported",
+    "report": "jungle.md"
+  },
+  "mid": {
+    "status": "reported",
+    "report": "mid.md"
+  },
+  "support": {
+    "status": "reported",
+    "report": "support.md"
+  }
+}

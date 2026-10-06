@@ -1,0 +1,14 @@
+{
+  "windows": {
+    "status": "reported",
+    "report": "worlds-macro.txt"
+  },
+  "project": {
+    "status": "reported",
+    "report": "worlds-data.txt"
+  },
+  "workflow": {
+    "status": "reported",
+    "report": "current-rules.txt"
+  }
+}

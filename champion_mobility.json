@@ -1,0 +1,1454 @@
+{
+ "Aatrox": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Ahri": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "dash"
+   ]
+  }
+ },
+ "Akali": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "dash",
+    "leap"
+   ]
+  }
+ },
+ "Akshan": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ]
+  }
+ },
+ "Alistar": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ambessa": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Amumu": {
+  "movement": [],
+  "spells": {}
+ },
+ "Anivia": {
+  "movement": [],
+  "spells": {}
+ },
+ "Annie": {
+  "movement": [],
+  "spells": {}
+ },
+ "Aphelios": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ashe": {
+  "movement": [],
+  "spells": {}
+ },
+ "Aurelion Sol": {
+  "movement": [],
+  "spells": {}
+ },
+ "Aurora": {
+  "movement": [
+   "blink",
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap",
+    "blink"
+   ],
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Azir": {
+  "movement": [
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Bard": {
+  "movement": [],
+  "spells": {}
+ },
+ "Bel'Veth": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ]
+  }
+ },
+ "Blitzcrank": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Brand": {
+  "movement": [],
+  "spells": {}
+ },
+ "Braum": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Briar": {
+  "movement": [
+   "charge",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "Q": [
+    "leap"
+   ],
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Caitlyn": {
+  "movement": [],
+  "spells": {}
+ },
+ "Camille": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ],
+   "R": [
+    "dash"
+   ]
+  }
+ },
+ "Cassiopeia": {
+  "movement": [],
+  "spells": {}
+ },
+ "Cho'Gath": {
+  "movement": [],
+  "spells": {}
+ },
+ "Corki": {
+  "movement": [],
+  "spells": {}
+ },
+ "Darius": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Diana": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Dr. Mundo": {
+  "movement": [],
+  "spells": {}
+ },
+ "Draven": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ekko": {
+  "movement": [
+   "blink",
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "blink",
+    "charge"
+   ]
+  }
+ },
+ "Elise": {
+  "movement": [
+   "lunge"
+  ],
+  "spells": {
+   "Q": [
+    "lunge"
+   ]
+  }
+ },
+ "Evelynn": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ezreal": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "E": [
+    "blink"
+   ]
+  }
+ },
+ "Fiddlesticks": {
+  "movement": [],
+  "spells": {}
+ },
+ "Fiora": {
+  "movement": [
+   "lunge"
+  ],
+  "spells": {
+   "Q": [
+    "lunge"
+   ]
+  }
+ },
+ "Fizz": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ],
+   "Q": [
+    "dash"
+   ]
+  }
+ },
+ "Galio": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Gangplank": {
+  "movement": [],
+  "spells": {}
+ },
+ "Garen": {
+  "movement": [],
+  "spells": {}
+ },
+ "Gnar": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ]
+  }
+ },
+ "Gragas": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ]
+  }
+ },
+ "Graves": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Gwen": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Hecarim": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Heimerdinger": {
+  "movement": [],
+  "spells": {}
+ },
+ "Hwei": {
+  "movement": [],
+  "spells": {}
+ },
+ "Illaoi": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ],
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Irelia": {
+  "movement": [
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ],
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Ivern": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ]
+  }
+ },
+ "Janna": {
+  "movement": [],
+  "spells": {}
+ },
+ "Jarvan IV": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Jax": {
+  "movement": [
+   "charge",
+   "leap"
+  ],
+  "spells": {
+   "Q": [
+    "leap"
+   ],
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Jayce": {
+  "movement": [
+   "charge",
+   "leap"
+  ],
+  "spells": {
+   "Q": [
+    "leap"
+   ],
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Jhin": {
+  "movement": [],
+  "spells": {}
+ },
+ "Jinx": {
+  "movement": [],
+  "spells": {}
+ },
+ "K'Sante": {
+  "movement": [
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "dash"
+   ],
+   "W": [
+    "dash",
+    "charge"
+   ]
+  }
+ },
+ "Kai'Sa": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "dash"
+   ]
+  }
+ },
+ "Kalista": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "dash",
+    "blink"
+   ]
+  }
+ },
+ "Karma": {
+  "movement": [],
+  "spells": {}
+ },
+ "Karthus": {
+  "movement": [],
+  "spells": {}
+ },
+ "Kassadin": {
+  "movement": [
+   "blink",
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Katarina": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "E": [
+    "blink"
+   ]
+  }
+ },
+ "Kayle": {
+  "movement": [],
+  "spells": {}
+ },
+ "Kayn": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ]
+  }
+ },
+ "Kennen": {
+  "movement": [],
+  "spells": {}
+ },
+ "Kha'Zix": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ]
+  }
+ },
+ "Kindred": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Kled": {
+  "movement": [
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Kog'Maw": {
+  "movement": [],
+  "spells": {}
+ },
+ "LeBlanc": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Lee Sin": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ]
+  }
+ },
+ "Leona": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Lillia": {
+  "movement": [],
+  "spells": {}
+ },
+ "Lissandra": {
+  "movement": [],
+  "spells": {}
+ },
+ "Locke": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash",
+    "blink"
+   ]
+  }
+ },
+ "Lucian": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Lulu": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "leap"
+   ]
+  }
+ },
+ "Lux": {
+  "movement": [],
+  "spells": {}
+ },
+ "Malphite": {
+  "movement": [],
+  "spells": {}
+ },
+ "Malzahar": {
+  "movement": [],
+  "spells": {}
+ },
+ "Maokai": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Master Yi": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "Q": [
+    "blink"
+   ]
+  }
+ },
+ "Mel": {
+  "movement": [],
+  "spells": {}
+ },
+ "Milio": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ]
+  }
+ },
+ "Miss Fortune": {
+  "movement": [],
+  "spells": {}
+ },
+ "Mordekaiser": {
+  "movement": [],
+  "spells": {}
+ },
+ "Morgana": {
+  "movement": [],
+  "spells": {}
+ },
+ "Naafiri": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "Q": [
+    "leap"
+   ],
+   "R": [
+    "dash"
+   ]
+  }
+ },
+ "Nami": {
+  "movement": [],
+  "spells": {}
+ },
+ "Nasus": {
+  "movement": [],
+  "spells": {}
+ },
+ "Nautilus": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Neeko": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Nidalee": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Nilah": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Nocturne": {
+  "movement": [],
+  "spells": {}
+ },
+ "Nunu & Willump": {
+  "movement": [],
+  "spells": {}
+ },
+ "Olaf": {
+  "movement": [],
+  "spells": {}
+ },
+ "Orianna": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ornn": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Pantheon": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ],
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Poppy": {
+  "movement": [
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash",
+    "charge"
+   ],
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Pyke": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Qiyana": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Quinn": {
+  "movement": [
+   "dash",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "dash",
+    "leap"
+   ]
+  }
+ },
+ "Rakan": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Rammus": {
+  "movement": [],
+  "spells": {}
+ },
+ "Rek'Sai": {
+  "movement": [
+   "charge",
+   "lunge"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ],
+   "R": [
+    "lunge"
+   ]
+  }
+ },
+ "Rell": {
+  "movement": [],
+  "spells": {}
+ },
+ "Renata Glasc": {
+  "movement": [],
+  "spells": {}
+ },
+ "Renekton": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Rengar": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Riven": {
+  "movement": [],
+  "spells": {}
+ },
+ "Rumble": {
+  "movement": [],
+  "spells": {}
+ },
+ "Ryze": {
+  "movement": [
+   "blink",
+   "charge"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Samira": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Sejuani": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ]
+  }
+ },
+ "Senna": {
+  "movement": [],
+  "spells": {}
+ },
+ "Seraphine": {
+  "movement": [],
+  "spells": {}
+ },
+ "Sett": {
+  "movement": [],
+  "spells": {}
+ },
+ "Shaco": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "Q": [
+    "blink"
+   ]
+  }
+ },
+ "Shen": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Shyvana": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Singed": {
+  "movement": [],
+  "spells": {}
+ },
+ "Sion": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ],
+   "R": [
+    "charge"
+   ]
+  }
+ },
+ "Sivir": {
+  "movement": [],
+  "spells": {}
+ },
+ "Skarner": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ]
+  }
+ },
+ "Smolder": {
+  "movement": [],
+  "spells": {}
+ },
+ "Sona": {
+  "movement": [],
+  "spells": {}
+ },
+ "Soraka": {
+  "movement": [],
+  "spells": {}
+ },
+ "Swain": {
+  "movement": [],
+  "spells": {}
+ },
+ "Sylas": {
+  "movement": [
+   "dash",
+   "lunge"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "W": [
+    "lunge"
+   ]
+  }
+ },
+ "Syndra": {
+  "movement": [],
+  "spells": {}
+ },
+ "Tahm Kench": {
+  "movement": [],
+  "spells": {}
+ },
+ "Taliyah": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Talon": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "Q": [
+    "leap"
+   ]
+  }
+ },
+ "Taric": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ]
+  }
+ },
+ "Teemo": {
+  "movement": [],
+  "spells": {}
+ },
+ "Thresh": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Tristana": {
+  "movement": [
+   "charge",
+   "leap"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "R": [
+    "charge"
+   ],
+   "W": [
+    "leap"
+   ]
+  }
+ },
+ "Trundle": {
+  "movement": [],
+  "spells": {}
+ },
+ "Tryndamere": {
+  "movement": [],
+  "spells": {}
+ },
+ "Twisted Fate": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Twitch": {
+  "movement": [],
+  "spells": {}
+ },
+ "Udyr": {
+  "movement": [],
+  "spells": {}
+ },
+ "Urgot": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ],
+   "Q": [
+    "charge"
+   ]
+  }
+ },
+ "Varus": {
+  "movement": [],
+  "spells": {}
+ },
+ "Vayne": {
+  "movement": [],
+  "spells": {}
+ },
+ "Veigar": {
+  "movement": [],
+  "spells": {}
+ },
+ "Vel'Koz": {
+  "movement": [],
+  "spells": {}
+ },
+ "Vex": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "dash"
+   ]
+  }
+ },
+ "Vi": {
+  "movement": [
+   "charge",
+   "leap"
+  ],
+  "spells": {
+   "Q": [
+    "charge"
+   ],
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Viego": {
+  "movement": [
+   "blink",
+   "charge",
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "blink"
+   ],
+   "W": [
+    "dash",
+    "charge"
+   ]
+  }
+ },
+ "Viktor": {
+  "movement": [],
+  "spells": {}
+ },
+ "Vladimir": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ]
+  }
+ },
+ "Volibear": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Warwick": {
+  "movement": [
+   "leap",
+   "lunge"
+  ],
+  "spells": {
+   "Q": [
+    "lunge"
+   ],
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Wukong": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Xayah": {
+  "movement": [
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap"
+   ]
+  }
+ },
+ "Xerath": {
+  "movement": [],
+  "spells": {}
+ },
+ "Xin Zhao": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "E": [
+    "charge"
+   ]
+  }
+ },
+ "Yasuo": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Yone": {
+  "movement": [
+   "blink",
+   "dash"
+  ],
+  "spells": {
+   "Q": [
+    "dash"
+   ],
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Yorick": {
+  "movement": [],
+  "spells": {}
+ },
+ "Yunara": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Yuumi": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Zaahen": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Zac": {
+  "movement": [],
+  "spells": {}
+ },
+ "Zed": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "R": [
+    "dash"
+   ],
+   "W": [
+    "dash"
+   ]
+  }
+ },
+ "Zeri": {
+  "movement": [
+   "dash"
+  ],
+  "spells": {
+   "E": [
+    "dash"
+   ]
+  }
+ },
+ "Ziggs": {
+  "movement": [
+   "charge"
+  ],
+  "spells": {
+   "W": [
+    "charge"
+   ]
+  }
+ },
+ "Zilean": {
+  "movement": [
+   "blink"
+  ],
+  "spells": {
+   "R": [
+    "blink"
+   ]
+  }
+ },
+ "Zoe": {
+  "movement": [
+   "blink",
+   "leap"
+  ],
+  "spells": {
+   "R": [
+    "leap",
+    "blink"
+   ]
+  }
+ },
+ "Zyra": {
+  "movement": [],
+  "spells": {}
+ }
+}
