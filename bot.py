@@ -24,6 +24,7 @@ from coach import (LESSON_TRIGGERS, NOTE_NOT_SAVED, Topic, active_champion, acti
 from coordinators import CoordinatorBoard
 from credentials import load_discord_token
 from local_hotkey import HotkeyCapture, input_devices
+from local_questions import answer_local_question, local_intent
 from minimap_reader import DEFAULT_RECT, MinimapWatcher
 from voice_input import WAKE, CoachSink, load_model, question_after_wake, transcribe_pcm
 
@@ -216,6 +217,24 @@ async def make_answer(guild_id: int, question: str) -> str:
             # The next layer on the read already delivered: no feed read, no ranker, no board write.
             return explain(topic, command[1])
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
+    factual = local_intent(question)
+    if factual:
+        state = bot.coordinators.last_state
+        if state is None:
+            try:
+                state = summarize_game(await asyncio.to_thread(read_live_game))
+            except (OSError, ValueError):
+                state = None
+        sightings = bot.minimap.snapshot() if bot.minimap else None
+        answer = answer_local_question(
+            factual,
+            state,
+            sightings,
+            minimap_enabled=bot.minimap is not None,
+            minimap_error=bot.minimap.error if bot.minimap else None,
+        )
+        print(f"Local answer ({factual}) ready in {time.perf_counter() - started:.1f}s", flush=True)
+        return answer
     sightings = bot.minimap.snapshot() if bot.minimap else None
     # The board and the note file change in accept(), once the answer is delivered.
     answer = await asyncio.to_thread(coach, question, bot.style.get(guild_id, "balanced"),

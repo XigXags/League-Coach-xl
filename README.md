@@ -24,6 +24,8 @@ Commands: `/coach`, `/ask`, `/stop`, `/note`, `/state`, `/coordinators`, `/appro
 
 Once connected to voice, Coach streams every answer with `edge-tts`, including a short diagnostic when no live match or ranker is available. This gives a recognized wake-word request audible feedback instead of silently leaving one-line status responses in chat.
 
+Factual questions about the fresh local feed bypass Jev. Supported examples include “who's on the minimap?”, the game clock, team rosters, kill/alive score, and the active player's health, level, and unspent gold. Minimap answers name only confident current icon matches; unclear or stale readings are reported as uncertain rather than absent.
+
 ## Current limits
 
 - Riot's Live Client Data API is local to the machine running League. Overwolf is a possible later adapter; this prototype uses Riot's documented local API directly.
