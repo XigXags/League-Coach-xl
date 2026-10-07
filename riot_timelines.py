@@ -1,8 +1,6 @@
 r"""Pull ranked match timelines from Riot's Match-V5 API, with player positions per minute.
 
-The key is read from the RIOT_API_KEY environment variable and is never printed.
-Set it in the same PowerShell window you run this from:
-  $env:RIOT_API_KEY = (Get-Content "$env:USERPROFILE\OneDrive\Desktop\LOLAPI.txt" -Raw).Trim()
+The key is read from RIOT_API_KEY in the project's .env file and is never printed.
 
 Usage:
   .venv\\Scripts\\python -B riot_timelines.py --riot-id "Name#TAG" --region americas --count 5
@@ -19,15 +17,18 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from credentials import load_env
+
 
 REGIONS = ("americas", "asia", "europe", "sea")
 OUTPUT = Path(__file__).with_name("artifacts") / "riot-timelines"
 
 
 def _key() -> str:
+    load_env()
     key = os.getenv("RIOT_API_KEY", "").strip()
     if not key:
-        raise SystemExit("RIOT_API_KEY is not set in this window. Set it first; see the module docstring.")
+        raise SystemExit("RIOT_API_KEY is not set. Add it to .env (see .env.example).")
     return key
 
 

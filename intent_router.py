@@ -11,7 +11,6 @@ import urllib.request
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import urlsplit
 
 TOOLS = {
@@ -78,11 +77,7 @@ def _safe_http_error(error: urllib.error.HTTPError) -> dict[str, str]:
 
 
 def _api_key() -> str:
-    key = os.getenv("COACH_ROUTER_API_KEY", "").strip()
-    file_name = os.getenv("COACH_ROUTER_API_KEY_FILE", "").strip()
-    if not key and file_name:
-        key = Path(file_name).read_text(encoding="utf-8-sig").strip()
-    return key
+    return os.getenv("COACH_ROUTER_API_KEY", "").strip()
 
 
 def _json_content(text: str) -> dict:

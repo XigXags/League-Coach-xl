@@ -5,9 +5,11 @@ from pathlib import Path
 import urllib.request
 import cv2
 import numpy as np
+from credentials import load_env
 from model_profiles import Profiles
 from scoreboard_reader import ocr_image
 
+load_env()
 registry = Profiles()
 for name in registry.data["profiles"]:
     print(f"{name}: {registry.readiness(name)}")

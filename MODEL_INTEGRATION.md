@@ -24,7 +24,7 @@ For a local OpenAI-compatible server, for example:
 .\.venv\Scripts\python.exe -B configure_model.py local-test --provider chat_completions --model YOUR_INSTALLED_MODEL --base-url http://127.0.0.1:11434/v1 --enable
 ```
 
-For OpenAI, provide `OPENAI_API_KEY` in the bot process environment, then:
+For OpenAI, set `OPENAI_API_KEY` in `.env`, then:
 
 ```powershell
 .\.venv\Scripts\python.exe -B configure_model.py openai-test --provider openai_responses --model YOUR_MODEL_ID --key-env OPENAI_API_KEY --enable
