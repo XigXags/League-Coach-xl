@@ -28,14 +28,23 @@ class RouterTests(unittest.TestCase):
             "tools": ["active_champion", "game_clock"],
             "clarification": "",
         })}}]}
+        captured = []
+
+        def respond(request, timeout):
+            captured.append(json.loads(request.data))
+            return Response(json.dumps(body).encode())
+
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
-        }, clear=True), patch("urllib.request.urlopen", return_value=Response(json.dumps(body).encode())):
+        }, clear=True), patch("urllib.request.urlopen", side_effect=respond):
             route = route_question("Who am I and how long has this game gone?")
         self.assertEqual(route.kind, "observe")
         self.assertEqual(route.tools, ("active_champion", "game_clock"))
         self.assertEqual(route.source, "llm")
+        self.assertEqual(captured[0]["reasoning_effort"], "none")
+        self.assertEqual(captured[0]["max_completion_tokens"], 128)
+        self.assertTrue(captured[0]["response_format"]["json_schema"]["strict"])
 
     def test_unknown_tool_is_rejected_and_falls_back(self):
         body = {"choices": [{"message": {"content": json.dumps({

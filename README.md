@@ -28,6 +28,8 @@ Factual questions about the fresh local feed bypass Jev. Supported examples incl
 
 An optional OpenAI-compatible intent model can choose one or more of those retrieval tools. Set `COACH_ROUTER_URL` to the full chat-completions endpoint, `COACH_ROUTER_MODEL` to its model name, and either `COACH_ROUTER_API_KEY` or `COACH_ROUTER_API_KEY_FILE`. The router receives the question and a closed tool catalog, not game state. Invalid output falls back to local rules. Only a `decision` route reaches Jev; observation and estimate routes are answered from local tools. Gold difference is explicitly a low-confidence score-derived estimate, not Riot-reported team gold.
 
+The recommended low-cost OpenAI configuration is `https://api.openai.com/v1/chat/completions` with `gpt-6-luna`. The request uses strict Structured Outputs, `reasoning_effort: none`, a 128-token output ceiling, and `store: false`.
+
 ## Current limits
 
 - Riot's Live Client Data API is local to the machine running League. Overwolf is a possible later adapter; this prototype uses Riot's documented local API directly.

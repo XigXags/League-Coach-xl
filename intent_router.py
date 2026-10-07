@@ -22,6 +22,25 @@ TOOLS = {
     "team_gold_estimate": "A low-confidence team gold estimate derived from visible score statistics.",
 }
 
+ROUTE_SCHEMA = {
+    "name": "league_coach_route",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "kind": {"type": "string", "enum": ["observe", "estimate", "decision", "clarify"]},
+            "tools": {
+                "type": "array",
+                "items": {"type": "string", "enum": sorted(TOOLS)},
+                "uniqueItems": True,
+            },
+            "clarification": {"type": "string"},
+        },
+        "required": ["kind", "tools", "clarification"],
+        "additionalProperties": False,
+    },
+}
+
 LOCAL_INTENT_TO_TOOL = {
     "minimap": "visible_minimap",
     "clock": "game_clock",
@@ -104,7 +123,10 @@ def route_question(question: str, *, timeout: float = 8.0) -> Route:
     )
     payload = {
         "model": model,
-        "temperature": 0,
+        "reasoning_effort": "none",
+        "max_completion_tokens": 128,
+        "store": False,
+        "response_format": {"type": "json_schema", "json_schema": ROUTE_SCHEMA},
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": question},
