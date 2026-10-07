@@ -1,4 +1,4 @@
-"""Read the locally stored Discord bot token without logging it."""
+"""Load settings and secrets from the project's single .env file without logging them."""
 
 from __future__ import annotations
 
@@ -6,35 +6,47 @@ import os
 from pathlib import Path
 
 
-DEFAULT_TOKEN_FILE = Path.home() / "OneDrive" / "Desktop" / "DISCORD_BOT_TOKEN.txt"
-DEFAULT_JEV_FILE = Path.home() / "OneDrive" / "Desktop" / "LaugeCoach_APIkey.txt"
-PROJECT_JEV_FILE = Path(__file__).with_name("TYPESAFE_API_KEY.txt")
+ENV_FILE = Path(__file__).with_name(".env")
+
+
+def load_env(path: Path | None = None) -> None:
+    """Copy KEY=VALUE lines from .env into the process environment.
+
+    Variables already set in the environment win, and blank values are skipped, so an untouched
+    line copied from .env.example behaves as if it were absent.
+    """
+    try:
+        lines = (path or ENV_FILE).read_text(encoding="utf-8-sig").splitlines()
+    except FileNotFoundError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        name = name.strip().removeprefix("export ").strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        else:
+            value = value.split(" #", 1)[0].strip()
+        if name and value:
+            os.environ.setdefault(name, value)
 
 
 def load_discord_token() -> str:
+    load_env()
     token = os.getenv("DISCORD_BOT_TOKEN", "").strip()
     if not token:
-        token_file = Path(os.getenv("DISCORD_BOT_TOKEN_FILE", str(DEFAULT_TOKEN_FILE)))
-        try:
-            token = token_file.read_text(encoding="utf-8-sig").strip()
-        except FileNotFoundError:
-            raise RuntimeError("Discord token not found. Set DISCORD_BOT_TOKEN or DISCORD_BOT_TOKEN_FILE.") from None
-    if token.startswith("DISCORD_BOT_TOKEN="):
-        token = token.split("=", 1)[1].strip().strip('"').strip("'")
-    if not token or any(c.isspace() for c in token):
-        raise RuntimeError("Discord token file must contain one token on one line.")
+        raise RuntimeError("Discord token not found. Set DISCORD_BOT_TOKEN in .env (see .env.example).")
+    if any(c.isspace() for c in token):
+        raise RuntimeError("DISCORD_BOT_TOKEN must be one token on one line.")
     return token
 
 
 def load_jev_key() -> str:
+    load_env()
     key = os.getenv("TYPESAFE_API_KEY", "").strip()
-    if not key:
-        for candidate in (DEFAULT_JEV_FILE, PROJECT_JEV_FILE):
-            if candidate.is_file():
-                key = candidate.read_text(encoding="utf-8-sig").strip()
-                break
-    if key.startswith("TYPESAFE_API_KEY="):
-        key = key.split("=", 1)[1].strip().strip('"').strip("'")
     if any(c.isspace() for c in key):
-        raise RuntimeError("Jev key file must contain one key on one line.")
+        raise RuntimeError("TYPESAFE_API_KEY must be one key on one line.")
     return key

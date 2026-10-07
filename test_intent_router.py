@@ -83,11 +83,10 @@ class RouterTests(unittest.TestCase):
             with self.assertRaises(IntentRouterError):
                 route_question("What champion am I playing?")
 
-    def test_missing_key_file_blocks_routing(self):
+    def test_missing_key_blocks_routing(self):
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
-            "COACH_ROUTER_API_KEY_FILE": "Z:\\missing\\router-key.txt",
         }, clear=True):
             with self.assertRaises(IntentRouterError):
                 route_question("What champion am I playing?")

@@ -22,7 +22,7 @@ import lane_playbook
 from coach import (LESSON_TRIGGERS, NOTE_NOT_SAVED, Topic, active_champion, active_role, coach, evidence, explain,
                    is_noise, quick_intent, read_live_game, summarize_game)
 from coordinators import CoordinatorBoard
-from credentials import load_discord_token
+from credentials import load_discord_token, load_env
 from intent_router import IntentRouterError, route_question
 from local_hotkey import HotkeyCapture, input_devices
 from local_questions import answer_tools
@@ -969,6 +969,7 @@ async def leave(interaction: discord.Interaction) -> None:
 
 if __name__ == "__main__":
     try:
+        load_env()
         bot.run(load_discord_token())
     except RuntimeError as exc:
         raise SystemExit(str(exc)) from None
