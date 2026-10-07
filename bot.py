@@ -23,7 +23,9 @@ from coach import (LESSON_TRIGGERS, NOTE_NOT_SAVED, Topic, active_champion, acti
                    is_noise, quick_intent, read_live_game, summarize_game)
 from coordinators import CoordinatorBoard
 from credentials import load_discord_token
+from intent_router import IntentRouterError, route_question
 from local_hotkey import HotkeyCapture, input_devices
+from local_questions import answer_tools
 from minimap_reader import DEFAULT_RECT, MinimapWatcher
 from model_profiles import Profiles
 from model_pipeline import enhance_chain, brief_for, draft
@@ -128,7 +130,7 @@ class CoachBot(discord.Client):
         notice = accept(message.guild.id if message.guild else 0, answer)
         if notice:
             await message.reply(notice, mention_author=False)
-        if message.guild and answer.startswith("Game read"):
+        if message.guild:
             await speak_with_refresh(message.guild, message.channel, question, answer, version)
 
 
@@ -236,6 +238,12 @@ def live_teams() -> dict[str, list[str]] | None:
 
 async def make_answer(guild_id: int, question: str) -> str:
     started = time.perf_counter()
+    try:
+        route = await asyncio.to_thread(route_question, question)
+    except IntentRouterError as error:
+        print(f"Intent layer blocked request before JEV: {error}", flush=True)
+        return ("I couldn't classify that request through OpenAI, so I did not send it to JEV. "
+                "Check the intent logs and try again.")
     profiles = bot.models.frozen_chain(bot.models.selected(guild_id))
     profile = profiles[0]
     jev_config = dict(bot.models.data["jev"])
@@ -251,6 +259,30 @@ async def make_answer(guild_id: int, question: str) -> str:
             answer.generation_context = getattr(topic, "generation_context", {})
             return await apply_models(guild_id, question, answer, profiles, jev_config, started, version, revision)
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
+    route_details = f"Question route: {route.kind} via {route.source}"
+    if route.tools:
+        route_details += f"; tools={','.join(route.tools)}"
+    print(route_details, flush=True)
+    if route.kind == "clarify":
+        return route.clarification
+    if route.kind in {"observe", "estimate"}:
+        state = bot.coordinators.last_state
+        if state is None:
+            try:
+                state = summarize_game(await asyncio.to_thread(read_live_game))
+            except (OSError, ValueError):
+                state = None
+        sightings = bot.minimap.snapshot() if bot.minimap else None
+        answer = answer_tools(
+            route.tools,
+            state,
+            sightings,
+            minimap_enabled=bot.minimap is not None,
+            minimap_error=bot.minimap.error if bot.minimap else None,
+        )
+        print(f"Local answer ({', '.join(route.tools)} via {route.source}) ready in "
+              f"{time.perf_counter() - started:.1f}s", flush=True)
+        return answer
     sightings = bot.minimap.snapshot() if bot.minimap else None
     # The board and the note file change in accept(), once the answer is delivered.
     deadline = bot.models.data["turn_deadline_seconds"]
@@ -313,13 +345,22 @@ def synthesize_windows(text: str, path: Path) -> None:
 
 
 def spoken_script(message: str) -> str:
-    """Speak the short line the coach attached; fall back to the chat labels."""
+    """Return a short TTS-safe line for every response, not only successful game reads."""
     spoken = getattr(message, "spoken", "")
     if spoken:
         return spoken
     lines = [line.replace("**", "").partition(" — ")[0].strip().rstrip(".")
              for line in message.splitlines()[1:]]
-    return ". ".join(line for line in lines if line) + ("." if any(lines) else "")
+    labels = ". ".join(line for line in lines if line)
+    if labels:
+        return labels + "."
+    # Errors and status replies are commonly one line. Speaking them confirms that a wake-word
+    # request reached Coach even when there is no live match or Jev is temporarily unavailable.
+    plain = str(message).replace("**", "").replace("`", "").strip()
+    words = plain.split()
+    if len(words) > 80:
+        plain = " ".join(words[:80]).rstrip(".,;:!?") + "."
+    return plain
 
 
 class SpeechFeed(io.RawIOBase):
@@ -482,7 +523,7 @@ async def respond_to_question(interaction: discord.Interaction, question: str) -
     notice = accept(guild_id, message)
     if notice:
         await interaction.followup.send(notice, ephemeral=True)
-    if interaction.guild and message.startswith("Game read"):
+    if interaction.guild:
         voice_error = await speak_with_refresh(interaction.guild, interaction.channel,
                                                question, message, version)
         if voice_error:
@@ -538,10 +579,9 @@ async def process_voice_question(guild: discord.Guild, user_id: int,
         notice = accept(guild.id, answer)
         if notice:
             await channel.send(notice)
-        if answer.startswith("Game read"):
-            voice_error = await speak_with_refresh(guild, channel, question, answer, version)
-            if voice_error:
-                await channel.send(voice_error)
+        voice_error = await speak_with_refresh(guild, channel, question, answer, version)
+        if voice_error:
+            await channel.send(voice_error)
     except Exception as exc:
         print(f"Voice question failed: {type(exc).__name__}: {exc}", flush=True)
 

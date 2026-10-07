@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import bot as coach_bot
 from coach import Option, Reply, Topic, explain
+from intent_router import Route
 
 
 class VoiceStub:
@@ -59,6 +60,21 @@ class InterruptTests(unittest.IsolatedAsyncioTestCase):
                                                        local=True, version_at_press=version)
             self.assertEqual(channel.send.await_count, 2)
             self.assertIn("Should we push mid", channel.send.await_args_list[0].args[0])
+        finally:
+            coach_bot.bot.listen_channels.pop(guild.id, None)
+
+    async def test_voice_question_speaks_a_status_response_without_a_game(self):
+        guild = SimpleNamespace(id=987657, voice_client=None)
+        channel = SimpleNamespace(send=AsyncMock())
+        coach_bot.bot.listen_channels[guild.id] = channel
+        try:
+            with patch.object(coach_bot, "transcribe_pcm", return_value="Coach, what now?"), \
+                 patch.object(coach_bot, "make_answer", new_callable=AsyncMock,
+                              return_value="I can't read a live League match on this PC right now."), \
+                 patch.object(coach_bot, "speak_with_refresh", new_callable=AsyncMock,
+                              return_value=None) as spoke:
+                await coach_bot.process_voice_question(guild, 0, "Player", b"pcm", local=False)
+            spoke.assert_awaited_once()
         finally:
             coach_bot.bot.listen_channels.pop(guild.id, None)
 
@@ -390,7 +406,9 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_more_explains_the_delivered_read_without_asking_the_coach(self):
         coach_bot.accept(self.guild.id, fresh_reply())
         topic = coach_bot.bot.topics[self.guild.id]
-        with patch.object(coach_bot, "coach") as asked, patch.object(coach_bot, "read_live_game") as feed:
+        with patch.object(coach_bot, "route_question", return_value=Route("decision")), \
+             patch.object(coach_bot, "coach") as asked, \
+             patch.object(coach_bot, "read_live_game") as feed:
             first = await coach_bot.make_answer(self.guild.id, "explain more")
             again = await coach_bot.make_answer(self.guild.id, "keep going")
             self.assertEqual((first.layer, again.layer, topic.layer), (1, 1, 0))   # not delivered: no advance
@@ -413,6 +431,7 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_an_explanation_is_posted_and_spoken_through_the_usual_path(self):
         coach_bot.accept(self.guild.id, fresh_reply())
         with patch.object(coach_bot, "transcribe_pcm", return_value="Explain more."), \
+             patch.object(coach_bot, "route_question", return_value=Route("decision")), \
              patch.object(coach_bot, "coach") as asked, \
              patch.object(coach_bot, "speak_with_refresh", new_callable=AsyncMock, return_value=None) as spoke:
             await coach_bot.process_voice_question(self.guild, 0, "Player", b"pcm", local=True,
@@ -426,7 +445,8 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coach_bot.bot.topics[self.guild.id].layer, 1)
 
     async def test_more_with_nothing_to_explain_asks_for_a_fresh_read(self):
-        with patch.object(coach_bot, "coach", return_value="Game read (live game): fresh") as asked:
+        with patch.object(coach_bot, "route_question", return_value=Route("decision")), \
+             patch.object(coach_bot, "coach", return_value="Game read (live game): fresh") as asked:
             answer = await coach_bot.make_answer(self.guild.id, "keep going")
         self.assertEqual(answer, "Game read (live game): fresh")
         self.assertEqual(asked.call_args.args[0], "What are our options now?")
@@ -434,7 +454,8 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((asked.call_args.kwargs["defer_board"], asked.call_args.kwargs["champion_ask"]),
                          (True, True))
         self.assertIs(asked.call_args.kwargs["coordinator_board"], coach_bot.bot.coordinators)
-        with patch.object(coach_bot, "coach", return_value="x") as asked:
+        with patch.object(coach_bot, "route_question", return_value=Route("decision")), \
+             patch.object(coach_bot, "coach", return_value="x") as asked:
             await coach_bot.make_answer(self.guild.id, "should I gank top")
         self.assertEqual(asked.call_args.args[0], "should I gank top")
 

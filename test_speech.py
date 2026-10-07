@@ -31,8 +31,12 @@ class SpokenScriptTests(unittest.TestCase):
         self.assertIn("A", spoken)
         self.assertIn("B", spoken)
 
-    def test_one_line_message_has_nothing_to_speak(self):
-        self.assertEqual(coach_bot.spoken_script("Game read (live game): old"), "")
+    def test_one_line_status_message_is_spoken(self):
+        self.assertEqual(coach_bot.spoken_script("I can't read a live League match."),
+                         "I can't read a live League match.")
+
+    def test_one_line_status_message_is_capped_for_voice(self):
+        self.assertLessEqual(len(coach_bot.spoken_script("word " * 100).split()), 80)
 
 
 class SpeechStreamTests(unittest.IsolatedAsyncioTestCase):
