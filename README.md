@@ -22,6 +22,8 @@ Your Discord application is **League Coach** (`1556684335543750736`). [Invite it
 
 Commands: `/coach`, `/ask`, `/stop`, `/note`, `/state`, `/coordinators`, `/approach`, `/join`, `/hotkey`, `/miclist`, `/stophotkey`, `/listen`, `/listenstatus`, `/stoplisten`, `/leave`. To talk in text, use `/ask` with a question, or write `@League Coach should we contest dragon?` in a text channel. `/state` shows the facts the bot can read without making a recommendation. Join voice first if you want spoken output. **Recommended on the PC running Coach:** run `/hotkey` once, then hold the **-** key (between 0 and =), ask your question, and release. This captures the local default microphone only while the key is held, stops Coach as soon as the key is pressed, and avoids Discord's unreliable encrypted voice-receive path. You can keep talking to friends with Discord's normal voice activation. If the wrong microphone is used, run `/miclist` and repeat `/hotkey mic:<number>`. `/stophotkey` turns it off. `COACH_HOTKEY_VK` can change the Windows virtual-key code before startup. The older `/listen` wake-word mode remains experimental. `/leave` disconnects entirely. By default, no live game or no Jev means no recommendation. `COACH_MOCK=1` is for offline development only.
 
+Once connected to voice, Coach streams every answer with `edge-tts`, including a short diagnostic when no live match or ranker is available. This gives a recognized wake-word request audible feedback instead of silently leaving one-line status responses in chat.
+
 ## Current limits
 
 - Riot's Live Client Data API is local to the machine running League. Overwolf is a possible later adapter; this prototype uses Riot's documented local API directly.

@@ -116,7 +116,7 @@ class CoachBot(discord.Client):
         await message.reply(answer, mention_author=False)
         if notice:
             await message.reply(notice, mention_author=False)
-        if message.guild and answer.startswith("Game read"):
+        if message.guild:
             await speak_with_refresh(message.guild, message.channel, question, answer, version)
 
 
@@ -255,13 +255,22 @@ def synthesize_windows(text: str, path: Path) -> None:
 
 
 def spoken_script(message: str) -> str:
-    """Speak the short line the coach attached; fall back to the chat labels."""
+    """Return a short TTS-safe line for every response, not only successful game reads."""
     spoken = getattr(message, "spoken", "")
     if spoken:
         return spoken
     lines = [line.replace("**", "").partition(" — ")[0].strip().rstrip(".")
              for line in message.splitlines()[1:]]
-    return ". ".join(line for line in lines if line) + ("." if any(lines) else "")
+    labels = ". ".join(line for line in lines if line)
+    if labels:
+        return labels + "."
+    # Errors and status replies are commonly one line. Speaking them confirms that a wake-word
+    # request reached Coach even when there is no live match or Jev is temporarily unavailable.
+    plain = str(message).replace("**", "").replace("`", "").strip()
+    words = plain.split()
+    if len(words) > 80:
+        plain = " ".join(words[:80]).rstrip(".,;:!?") + "."
+    return plain
 
 
 class SpeechFeed(io.RawIOBase):
@@ -422,7 +431,7 @@ async def respond_to_question(interaction: discord.Interaction, question: str) -
     await interaction.followup.send(message)
     if notice:
         await interaction.followup.send(notice, ephemeral=True)
-    if interaction.guild and message.startswith("Game read"):
+    if interaction.guild:
         voice_error = await speak_with_refresh(interaction.guild, interaction.channel,
                                                question, message, version)
         if voice_error:
@@ -476,10 +485,9 @@ async def process_voice_question(guild: discord.Guild, user_id: int,
         await channel.send(answer)
         if notice:
             await channel.send(notice)
-        if answer.startswith("Game read"):
-            voice_error = await speak_with_refresh(guild, channel, question, answer, version)
-            if voice_error:
-                await channel.send(voice_error)
+        voice_error = await speak_with_refresh(guild, channel, question, answer, version)
+        if voice_error:
+            await channel.send(voice_error)
     except Exception as exc:
         print(f"Voice question failed: {type(exc).__name__}: {exc}", flush=True)
 
