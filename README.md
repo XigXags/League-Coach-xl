@@ -26,6 +26,8 @@ Once connected to voice, Coach streams every answer with `edge-tts`, including a
 
 Factual questions about the fresh local feed bypass Jev. Supported examples include “who's on the minimap?”, the game clock, team rosters, kill/alive score, and the active player's health, level, and unspent gold. Minimap answers name only confident current icon matches; unclear or stale readings are reported as uncertain rather than absent.
 
+An optional OpenAI-compatible intent model can choose one or more of those retrieval tools. Set `COACH_ROUTER_URL` to the full chat-completions endpoint, `COACH_ROUTER_MODEL` to its model name, and either `COACH_ROUTER_API_KEY` or `COACH_ROUTER_API_KEY_FILE`. The router receives the question and a closed tool catalog, not game state. Invalid output falls back to local rules. Only a `decision` route reaches Jev; observation and estimate routes are answered from local tools. Gold difference is explicitly a low-confidence score-derived estimate, not Riot-reported team gold.
+
 ## Current limits
 
 - Riot's Live Client Data API is local to the machine running League. Overwolf is a possible later adapter; this prototype uses Riot's documented local API directly.

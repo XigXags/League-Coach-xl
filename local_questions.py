@@ -21,6 +21,11 @@ def local_intent(question: str) -> str | None:
         return None
     if any(pattern.search(text) for pattern in MINIMAP_PATTERNS):
         return "minimap"
+    if re.search(r"\b(?:what|which) champion am i (?:playing|on)\b", text):
+        return "champion"
+    if re.search(r"\b(?:estimated?|roughly|about).*\bgold (?:difference|diff|lead)\b", text) or \
+            re.search(r"\bhow (?:far )?(?:ahead|behind).*\bgold\b", text):
+        return "gold"
     if re.search(r"\b(?:what(?:'s| is) (?:the )?(?:game )?time|how long (?:has|have) .*game)", text):
         return "clock"
     if re.search(r"\b(?:who(?:'s| is) in (?:this|the) game|team comps?|champion roster)\b", text):
@@ -101,6 +106,10 @@ def answer_local_question(intent: str, state: dict[str, Any] | None,
         return _minimap_answer(state, sightings, enabled=minimap_enabled, error=minimap_error)
     if not state or not state.get("players"):
         return "I can't read a live League match on this PC right now."
+    if intent == "champion":
+        me = next((p for p in state["players"] if p.get("name") == state.get("active_player")), {})
+        champion = me.get("champion")
+        return f"You're playing {champion}." if champion else "I can't identify your champion right now."
     if intent == "clock":
         return f"The game clock is {_clock(state.get('game_time_seconds'))}."
     if intent == "roster":
@@ -123,4 +132,41 @@ def answer_local_question(intent: str, state: dict[str, Any] | None,
         if state.get("active_gold") is not None:
             facts.append(f"{state['active_gold']} unspent gold")
         return "You have " + ", ".join(facts) + "." if facts else "Your current status is unavailable."
+    if intent == "gold":
+        ours = [p for p in state["players"] if p.get("team") == state.get("our_team")]
+        theirs = [p for p in state["players"] if p.get("team") == _enemy_team(state)]
+
+        def estimate(players: Sequence[dict[str, Any]]) -> float:
+            # A deliberately rough score-derived estimate. Passive and starting gold cancel for equal
+            # team sizes; plates, bounties, objectives, support income and sold items remain unknown.
+            return sum(float(p.get("cs") or 0) * 20 + float(p.get("kills") or 0) * 300
+                       + float(p.get("assists") or 0) * 75 for p in players)
+
+        difference = round(estimate(ours) - estimate(theirs), -2)
+        direction = "ahead" if difference >= 0 else "behind"
+        return (f"Low-confidence estimate: your team is about {abs(int(difference)):,} gold {direction}. "
+                "This uses score-derived averages for CS, kills, and assists; it excludes plates, "
+                "bounties, objectives, support income, sold items, and unknown unspent gold.")
     raise ValueError(f"Unsupported local intent: {intent}")
+
+
+TOOL_TO_INTENT = {
+    "active_champion": "champion",
+    "visible_minimap": "minimap",
+    "match_roster": "roster",
+    "game_clock": "clock",
+    "scoreboard": "score",
+    "active_status": "self",
+    "team_gold_estimate": "gold",
+}
+
+
+def answer_tools(tools: Sequence[str], state: dict[str, Any] | None,
+                 sightings: Sequence[Any] | None = None, *, minimap_enabled: bool = False,
+                 minimap_error: Exception | None = None) -> str:
+    """Execute validated retrieval tools and combine their factual outputs."""
+    answers = [answer_local_question(
+        TOOL_TO_INTENT[tool], state, sightings,
+        minimap_enabled=minimap_enabled, minimap_error=minimap_error,
+    ) for tool in tools]
+    return " ".join(dict.fromkeys(answers))

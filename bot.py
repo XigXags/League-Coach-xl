@@ -23,8 +23,9 @@ from coach import (LESSON_TRIGGERS, NOTE_NOT_SAVED, Topic, active_champion, acti
                    is_noise, quick_intent, read_live_game, summarize_game)
 from coordinators import CoordinatorBoard
 from credentials import load_discord_token
+from intent_router import route_question
 from local_hotkey import HotkeyCapture, input_devices
-from local_questions import answer_local_question, local_intent
+from local_questions import answer_tools
 from minimap_reader import DEFAULT_RECT, MinimapWatcher
 from voice_input import WAKE, CoachSink, load_model, question_after_wake, transcribe_pcm
 
@@ -217,8 +218,11 @@ async def make_answer(guild_id: int, question: str) -> str:
             # The next layer on the read already delivered: no feed read, no ranker, no board write.
             return explain(topic, command[1])
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
-    factual = local_intent(question)
-    if factual:
+    route = await asyncio.to_thread(route_question, question)
+    if route.kind == "clarify":
+        print("Question route: clarify", flush=True)
+        return route.clarification
+    if route.kind in {"observe", "estimate"}:
         state = bot.coordinators.last_state
         if state is None:
             try:
@@ -226,14 +230,15 @@ async def make_answer(guild_id: int, question: str) -> str:
             except (OSError, ValueError):
                 state = None
         sightings = bot.minimap.snapshot() if bot.minimap else None
-        answer = answer_local_question(
-            factual,
+        answer = answer_tools(
+            route.tools,
             state,
             sightings,
             minimap_enabled=bot.minimap is not None,
             minimap_error=bot.minimap.error if bot.minimap else None,
         )
-        print(f"Local answer ({factual}) ready in {time.perf_counter() - started:.1f}s", flush=True)
+        print(f"Local answer ({', '.join(route.tools)} via {route.source}) ready in "
+              f"{time.perf_counter() - started:.1f}s", flush=True)
         return answer
     sightings = bot.minimap.snapshot() if bot.minimap else None
     # The board and the note file change in accept(), once the answer is delivered.

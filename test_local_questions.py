@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import bot as coach_bot
-from local_questions import answer_local_question, local_intent
+from local_questions import answer_local_question, answer_tools, local_intent
 
 
 def state():
@@ -58,10 +58,25 @@ class LocalAnswerTests(unittest.TestCase):
             "minimap", state(), None, minimap_enabled=False))
 
     def test_other_local_facts(self):
+        self.assertEqual(answer_local_question("champion", state()), "You're playing Ashe.")
         self.assertEqual(answer_local_question("clock", state()), "The game clock is 6:12.")
         self.assertIn("Allies: Ashe, Nami", answer_local_question("roster", state()))
         self.assertIn("Kills are 4 to 3", answer_local_question("score", state()))
         self.assertIn("850 unspent gold", answer_local_question("self", state()))
+
+    def test_gold_difference_is_explicitly_low_confidence(self):
+        sample = state()
+        sample["players"][0].update(cs=80, kills=3, assists=2)
+        sample["players"][1].update(cs=10, kills=0, assists=3)
+        sample["players"][2].update(cs=50, kills=2, assists=1)
+        answer = answer_local_question("gold", sample)
+        self.assertIn("Low-confidence estimate", answer)
+        self.assertIn("excludes plates", answer)
+
+    def test_multiple_tools_are_combined(self):
+        answer = answer_tools(("active_champion", "game_clock"), state())
+        self.assertIn("playing Ashe", answer)
+        self.assertIn("6:12", answer)
 
 
 class RoutingTests(unittest.IsolatedAsyncioTestCase):
