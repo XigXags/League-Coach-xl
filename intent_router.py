@@ -6,6 +6,7 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 import uuid
 from dataclasses import dataclass
@@ -33,7 +34,6 @@ ROUTE_SCHEMA = {
             "tools": {
                 "type": "array",
                 "items": {"type": "string", "enum": sorted(TOOLS)},
-                "uniqueItems": True,
             },
             "clarification": {"type": "string"},
         },
@@ -59,6 +59,22 @@ def _log(event: str, **details: object) -> None:
     suffix = " ".join(f"{name}={value}" for name, value in details.items()
                       if value is not None and value != "")
     print(f"[{stamp}] [intent] {event}" + (f" {suffix}" if suffix else ""), flush=True)
+
+
+def _safe_http_error(error: urllib.error.HTTPError) -> dict[str, str]:
+    """Extract OpenAI's structured error without logging credentials or request content."""
+    try:
+        body = json.loads(error.read().decode("utf-8", errors="replace"))
+        details = body.get("error", {}) if isinstance(body, dict) else {}
+        if not isinstance(details, dict):
+            return {}
+        return {
+            name: str(details[name]).replace("\r", " ").replace("\n", " ")[:300]
+            for name in ("type", "code", "param", "message")
+            if details.get(name) is not None
+        }
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return {}
 
 
 def _api_key() -> str:
@@ -162,8 +178,11 @@ def route_question(question: str, *, timeout: float = 8.0) -> Route:
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
         status = getattr(error, "code", None)
         reason = getattr(error, "reason", None)
+        api_error = _safe_http_error(error) if isinstance(error, urllib.error.HTTPError) else {}
         _log("request_failed", request_id=request_id, error=type(error).__name__, status=status,
              reason=str(reason or error).replace("\r", " ").replace("\n", " ")[:160],
+             api_type=api_error.get("type"), api_code=api_error.get("code"),
+             api_param=api_error.get("param"), api_message=api_error.get("message"),
              latency_ms=round((time.perf_counter() - started) * 1000), action="blocked_before_jev")
         diagnostic = type(error).__name__ + (f" HTTP {status}" if status is not None else "")
         raise IntentRouterError(f"OpenAI intent classification failed ({diagnostic})") from error
