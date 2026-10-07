@@ -6,3 +6,4 @@ faster-whisper>=1.2,<2
 sounddevice>=0.5,<1
 mss>=10,<11
 opencv-python-headless>=4.10,<6
+aiohttp>=3.12,<4

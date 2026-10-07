@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+import copy
 from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
@@ -66,6 +67,15 @@ def _compact_guidance(report: str) -> str:
 
 
 class CoordinatorBoard:
+    def fork(self):
+        """Detached evaluation board with the current notes/plan and its own lock."""
+        with self.lock:
+            board = CoordinatorBoard(copy.deepcopy(self.reports))
+            for name, value in self.__dict__.items():
+                if name != "lock":
+                    setattr(board, name, copy.deepcopy(value))
+        return board
+
     def __init__(self, reports: dict[str, str] | None = None) -> None:
         self.reports = reports if reports is not None else load_role_reports()
         if any(not self.reports.get(role) for role in ROLES):

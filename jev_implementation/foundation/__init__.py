@@ -1,1 +1,1 @@
-"""Offline Jev foundations. Not imported by Coach's live runtime."""
+"""Shared validated Jev contracts and explicit calibration policies used by Coach."""

@@ -25,6 +25,9 @@ from coordinators import CoordinatorBoard
 from credentials import load_discord_token
 from local_hotkey import HotkeyCapture, input_devices
 from minimap_reader import DEFAULT_RECT, MinimapWatcher
+from model_profiles import Profiles
+from model_pipeline import enhance_chain, brief_for, draft
+from scoreboard_reader import ScoreboardWatcher
 from voice_input import WAKE, CoachSink, load_model, question_after_wake, transcribe_pcm
 
 # Voice receive logs an RTCP line every second; keep warnings and errors only.
@@ -58,6 +61,9 @@ class CoachBot(discord.Client):
         self.coordinators = CoordinatorBoard()
         self.coordinator_task: asyncio.Task | None = None
         self.minimap: MinimapWatcher | None = None
+        self.models = Profiles()
+        self.generations: dict[int, asyncio.Task] = {}
+        self.scoreboard: ScoreboardWatcher | None = None
 
     async def setup_hook(self) -> None:
         guild_id = os.getenv("DISCORD_GUILD_ID", "").strip()
@@ -67,6 +73,10 @@ class CoachBot(discord.Client):
             await self.tree.sync(guild=guild)
 
     async def on_ready(self) -> None:
+        if self.scoreboard is None and os.getenv("COACH_SCOREBOARD", "1") == "1":
+            self.scoreboard = ScoreboardWatcher(lambda: summarize_game(read_live_game()))
+            self.scoreboard.start()
+            print("Scoreboard capture on: League foreground, Tab opens, local Windows OCR.", flush=True)
         if self.coordinator_task is None or self.coordinator_task.done():
             self.coordinator_task = asyncio.create_task(self.poll_coordinators())
         # Screen grabs happen only while the live feed reports a match, so this is safe to leave on.
@@ -110,10 +120,12 @@ class CoachBot(discord.Client):
         version = begin_request(message.guild)
         async with message.channel.typing():
             answer = await make_answer(message.guild.id if message.guild else 0, question)
-        if not current_request(message.guild, version):
+        if not current_request(message.guild, version) or not current_reply(answer):
+            return
+        await message.reply(answer, mention_author=False)
+        if not current_request(message.guild, version) or not current_reply(answer):
             return
         notice = accept(message.guild.id if message.guild else 0, answer)
-        await message.reply(answer, mention_author=False)
         if notice:
             await message.reply(notice, mention_author=False)
         if message.guild and answer.startswith("Game read"):
@@ -127,6 +139,9 @@ def begin_request(guild: discord.Guild | None) -> int:
     guild_id = guild.id if guild else 0
     version = bot.request_versions.get(guild_id, 0) + 1
     bot.request_versions[guild_id] = version
+    pending = bot.generations.pop(guild_id, None)
+    if pending and not pending.done():
+        pending.cancel()
     voice = guild.voice_client if guild else None
     if voice and voice.is_playing():
         voice.stop()
@@ -135,6 +150,12 @@ def begin_request(guild: discord.Guild | None) -> int:
 
 def current_request(guild: discord.Guild | None, version: int) -> bool:
     return bot.request_versions.get(guild.id if guild else 0) == version
+
+
+def current_reply(answer) -> bool:
+    topic = getattr(answer, "topic", None) or getattr(answer, "explained_topic", None)
+    return (not topic or topic.match_key is None or
+            (topic.match_key == bot.coordinators.match_key and topic.serial == bot.coordinators.match_serial))
 
 
 def stop_asked(question: str) -> bool:
@@ -168,10 +189,16 @@ def live_topic(guild_id: int) -> Topic | None:
 
 
 def accept(guild_id: int, answer: str) -> str:
-    """Record an answer that passed its gate and is about to be sent. No await sits between the gate
-    and this call, so a superseded or stopped answer never changes the plan, the offer or the topic.
+    """Record an answer after Discord sent it and its request gate was rechecked.
+    A failed delivery, superseded answer or changed match cannot change its plan/topic.
 
     Returns a line to post after the answer when the player's note could not be written, otherwise ""."""
+    if getattr(answer, "_accepted", False):
+        return ""
+    if not current_reply(answer):
+        return ""
+    if hasattr(answer, "__dict__"):
+        answer._accepted = True
     if getattr(answer, "layer", 0):
         topic = bot.topics.get(guild_id)
         if topic:
@@ -209,20 +236,51 @@ def live_teams() -> dict[str, list[str]] | None:
 
 async def make_answer(guild_id: int, question: str) -> str:
     started = time.perf_counter()
+    profiles = bot.models.frozen_chain(bot.models.selected(guild_id))
+    profile = profiles[0]
+    jev_config = dict(bot.models.data["jev"])
+    version = bot.request_versions.get(guild_id)
+    revision = bot.models.revision.get(guild_id, 0)
     topic = live_topic(guild_id)
     command = quick_intent(question, topic.words if topic else ((), ()))
     if command and command[0] == "more":
         if topic:
             # The next layer on the read already delivered: no feed read, no ranker, no board write.
-            return explain(topic, command[1])
+            answer = explain(topic, command[1])
+            answer.explained_topic = topic
+            answer.generation_context = getattr(topic, "generation_context", {})
+            return await apply_models(guild_id, question, answer, profiles, jev_config, started, version, revision)
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
     sightings = bot.minimap.snapshot() if bot.minimap else None
     # The board and the note file change in accept(), once the answer is delivered.
-    answer = await asyncio.to_thread(coach, question, bot.style.get(guild_id, "balanced"),
-                                     allow_demo_fallback=os.getenv("COACH_MOCK") == "1",
-                                     coordinator_board=bot.coordinators, minimap=sightings,
-                                     defer_board=True, champion_ask=True)
+    deadline = bot.models.data["turn_deadline_seconds"]
+    try:
+        async with asyncio.timeout(deadline):
+            answer = await asyncio.to_thread(coach, question, bot.style.get(guild_id, "balanced"),
+                                             allow_demo_fallback=os.getenv("COACH_MOCK") == "1",
+                                             coordinator_board=bot.coordinators, minimap=sightings,
+                                             defer_board=True, champion_ask=True, scoreboard_reader=bot.scoreboard)
+    except TimeoutError:
+        return "The game read timed out. I won't give you an old call; ask again."
+    answer = await apply_models(guild_id, question, answer, profiles, jev_config, started, version, revision)
     print(f"Answer ready in {time.perf_counter() - started:.1f}s", flush=True)
+    return answer
+
+
+async def apply_models(guild_id, question, answer, profiles, jev_config, started, version, revision):
+    if (version == bot.request_versions.get(guild_id) and
+            revision == bot.models.revision.get(guild_id, 0) and profiles[0]["provider"] != "builtin"):
+        task = asyncio.create_task(enhance_chain(answer, question, profiles, jev_config,
+                                          max(.01, bot.models.data["turn_deadline_seconds"] - (time.perf_counter() - started))))
+        bot.generations[guild_id] = task
+        try:
+            answer = await task
+        except asyncio.CancelledError:
+            # The request/version gate suppresses the obsolete prepared answer too.
+            return answer
+        finally:
+            if bot.generations.get(guild_id) is task:
+                bot.generations.pop(guild_id, None)
     return answer
 
 
@@ -410,7 +468,7 @@ async def respond_to_question(interaction: discord.Interaction, question: str) -
     await interaction.response.defer(thinking=True)
     guild_id = interaction.guild_id or 0
     message = await make_answer(guild_id, question)
-    if not current_request(interaction.guild, version):
+    if not current_request(interaction.guild, version) or not current_reply(message):
         # Replaced by a stop, or by a key press that may turn out to be one: leave nothing behind.
         latest = bot.request_versions.get(guild_id)
         if latest in (bot.stopped_versions.get(guild_id), bot.hotkey_versions.get(guild_id)):
@@ -418,8 +476,10 @@ async def respond_to_question(interaction: discord.Interaction, question: str) -
         else:
             await interaction.followup.send("A newer question replaced this call.", ephemeral=True)
         return
-    notice = accept(guild_id, message)
     await interaction.followup.send(message)
+    if not current_request(interaction.guild, version) or not current_reply(message):
+        return
+    notice = accept(guild_id, message)
     if notice:
         await interaction.followup.send(notice, ephemeral=True)
     if interaction.guild and message.startswith("Game read"):
@@ -470,10 +530,12 @@ async def process_voice_question(guild: discord.Guild, user_id: int,
         channel = bot.listen_channels[guild.id]
         await channel.send(f"**{name} asked in voice:** {question}")
         answer = await make_answer(guild.id, question)
-        if not current_request(guild, version):
+        if not current_request(guild, version) or not current_reply(answer):
+            return
+        await channel.send(answer)
+        if not current_request(guild, version) or not current_reply(answer):
             return
         notice = accept(guild.id, answer)
-        await channel.send(answer)
         if notice:
             await channel.send(notice)
         if answer.startswith("Game read"):
@@ -515,6 +577,117 @@ def hotkey_released(guild: discord.Guild, name: str, pcm: bytes) -> None:
 @app_commands.describe(question="What does the team want to decide?")
 async def coach_play(interaction: discord.Interaction, question: str = DEFAULT_QUESTION) -> None:
     await respond_to_question(interaction, question)
+
+
+@bot.tree.command(name="models", description="List Coach's model profiles and configuration status")
+async def models(interaction: discord.Interaction) -> None:
+    lines = []
+    for name in bot.models.data["profiles"]:
+        profile = bot.models.frozen(name)
+        lines.append(f"**{name}**: {profile['provider']}, {profile.get('model') or 'no model ID'} — "
+                     f"{bot.models.readiness(name)}")
+    lines.append("Generative profiles require a calibrated Jev policy for live speech. /compare tests drafts without speaking.")
+    await interaction.response.send_message("\n".join(lines)[:1900], ephemeral=True)
+
+
+@bot.tree.command(name="model", description="Inspect or change the Coach model for this server")
+@app_commands.describe(use="Profile from /models", reset="Restore the default profile",
+                       reload="Reload coach_models.json after editing it")
+async def model(interaction: discord.Interaction, use: str | None = None,
+                reset: bool = False, reload: bool = False) -> None:
+    guild_id = interaction.guild_id or 0
+    if use or reset or reload:
+        if not interaction.guild or not interaction.permissions.manage_guild:
+            await interaction.response.send_message("Manage Server is required to change Coach's model.", ephemeral=True)
+            return
+        if use and reset:
+            await interaction.response.send_message("Choose either use or reset.", ephemeral=True)
+            return
+        try:
+            if reload:
+                bot.models.reload()
+                for guild in bot.guilds:
+                    begin_request(guild)
+            if use or reset:
+                bot.models.select(guild_id, use if use else None)
+            begin_request(interaction.guild)
+        except (OSError, ValueError, KeyError, TypeError):
+            await interaction.response.send_message("Model configuration rejected. Check the local config and /models.", ephemeral=True)
+            return
+    selected = bot.models.selected(guild_id)
+    profile = bot.models.frozen(selected)
+    config = bot.models.data["jev"]
+    await interaction.response.send_message(
+        f"Coach profile: **{selected}** ({profile['provider']}; {profile.get('model') or 'prepared wording'}).\n"
+        f"Status: {bot.models.readiness(selected)}. Jev guard: {config['model']}.\n"
+        f"Calibration: {config.get('policy_id') or 'none — generated wording is comparison-only'}.\n"
+        "Use /model use:<profile> to switch or /model reset:true to restore the default.", ephemeral=True)
+
+
+@model.autocomplete("use")
+async def model_choices(interaction: discord.Interaction, current: str):
+    return [app_commands.Choice(name=name, value=name) for name in bot.models.data["profiles"]
+            if current.casefold() in name.casefold()][:25]
+
+
+@bot.tree.command(name="compare", description="Compare up to three LLM drafts on one game snapshot; no speech or plan writes")
+@app_commands.describe(profiles="Comma-separated profiles from /models", question="Question to compare")
+async def compare(interaction: discord.Interaction, profiles: str,
+                  question: str = DEFAULT_QUESTION) -> None:
+    names = list(dict.fromkeys(name.strip() for name in profiles.split(",") if name.strip()))
+    try:
+        if not 1 <= len(names) <= 3:
+            raise ValueError("Choose one to three profiles")
+        selected = [bot.models.frozen(name) for name in names]
+        if any(bot.models.readiness(name) != "ready" for name in names):
+            raise ValueError("A profile is disabled or missing configuration")
+    except (ValueError, KeyError) as exc:
+        await interaction.response.send_message(str(exc), ephemeral=True)
+        return
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    common_budget = min(profile["max_output_tokens"] for profile in selected)
+    for profile in selected:
+        profile["max_output_tokens"] = common_budget
+    # A separate board avoids writing live plans/notes while building this frozen evaluation brief.
+    board = bot.coordinators.fork()
+    answer = await asyncio.to_thread(coach, question, bot.style.get(interaction.guild_id or 0, "balanced"),
+                                     coordinator_board=board, defer_board=True,
+                                     minimap=bot.minimap.snapshot() if bot.minimap else None,
+                                     scoreboard_reader=bot.scoreboard)
+    if not getattr(answer, "generation_context", None):
+        await interaction.followup.send(str(answer), ephemeral=True)
+        return
+    brief = brief_for(answer, question)
+    config = dict(bot.models.data["jev"])
+    async def run(profile):
+        if profile["provider"] == "builtin":
+            return f"**{profile['id']}** — prepared Jev wording\n{getattr(answer, 'spoken', str(answer))}"
+        try:
+            async with asyncio.timeout(bot.models.data["turn_deadline_seconds"]):
+                result, checked = await draft(profile, brief, config, 5)
+            hazards = ", ".join(f"{name}={checked['answers'][name]['noul']:.2f}"
+                                for name in ("unseen_location", "unsupported_number", "missed_question"))
+            return (f"**{profile['id']}** ({result.model}, {result.seconds:.2f}s generation)\n"
+                    f"UNVALIDATED DRAFT: {result.text}\nJev: {hazards}; usage: {result.usage}")
+        except Exception as exc:
+            return f"**{profile['id']}**: comparison failed ({type(exc).__name__})."
+    results = await asyncio.gather(*(run(profile) for profile in selected))
+    for result in results:
+        await interaction.followup.send(result[:1900], ephemeral=True)
+
+
+@bot.tree.command(name="scoreboard", description="Check automatic scoreboard screenshot capture and text reading")
+async def scoreboard(interaction: discord.Interaction) -> None:
+    if not bot.scoreboard:
+        await interaction.response.send_message("Scoreboard capture is disabled on the host PC.", ephemeral=True)
+        return
+    status = bot.scoreboard.status()
+    await interaction.response.send_message(
+        f"Scoreboard capture {'running' if status['active'] else 'stopped'}; key {status['key']} (Tab by default).\n"
+        f"Saved captures: {status['captures']}. {status['last_status']}. "
+        f"Age: {status['age_seconds'] if status['age_seconds'] is not None else 'none'} seconds.\n"
+        f"{status['error']}\nHold Tab in the foreground League game. Fresh readable text feeds Jev and the selected model. "
+        "OCR is unverified; API facts take priority. Screenshots stay on this PC.", ephemeral=True)
 
 
 @bot.tree.command(name="stop", description="Stop the coach talking and cancel the answer in progress")

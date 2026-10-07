@@ -304,12 +304,12 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
         commit.assert_not_called()
         self.assertNotIn(self.guild.id, coach_bot.bot.topics)
 
-    async def test_a_delivered_answer_is_committed_before_it_is_sent(self):
+    async def test_a_delivered_answer_is_committed_after_it_is_sent(self):
         order = []
         reply = fresh_reply(lambda: order.append("commit"))
         self.channel.send.side_effect = lambda text: order.append("send")
         await self._voice("what now", version=self._press(), answer=reply)
-        self.assertEqual(order, ["send", "commit", "send"])   # echo, commit, answer
+        self.assertEqual(order, ["send", "send", "commit"])   # echo, answer, commit
         self.assertIs(coach_bot.bot.topics[self.guild.id], reply.topic)
 
     def test_accept_commits_a_fresh_read_and_remembers_its_topic(self):
@@ -379,6 +379,7 @@ class StopAndMoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([call.args[0] for call in self.channel.send.await_args_list][1:],
                          [reply, "I could not write the note."])
         interaction = self._interaction()
+        reply = fresh_reply(lambda: "I could not write the note.")
         with patch.object(coach_bot, "make_answer", new_callable=AsyncMock, return_value=reply), \
              patch.object(coach_bot, "speak_with_refresh", new_callable=AsyncMock, return_value=None):
             await coach_bot.respond_to_question(interaction, "what now")

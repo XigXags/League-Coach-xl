@@ -4,10 +4,10 @@ import copy
 import unittest
 from dataclasses import replace
 
-from foundation.contracts import ContractError, PINNED_MODEL, request_fingerprint, validate_request, validate_response
-from foundation.evidence import Fact, Turn, fresh_report, may_deliver
-from foundation.policy import Gate, Policy, guard_line, route_intent, selected_answer_fit
-from foundation.questions import HAZARDS, QUESTION_REVISION, output_guard_request
+from jev_implementation.foundation.contracts import ContractError, PINNED_MODEL, request_fingerprint, validate_request, validate_response
+from jev_implementation.foundation.evidence import Fact, Turn, fresh_report, may_deliver
+from jev_implementation.foundation.policy import Gate, Policy, guard_line, route_intent, selected_answer_fit
+from jev_implementation.foundation.questions import HAZARDS, QUESTION_REVISION, output_guard_request
 
 
 def request():

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "default_profile": "legacy",
+  "turn_deadline_seconds": 10,
+  "jev": {
+    "model": "jev-1.13.0",
+    "credential_source": "existing_jev_loader",
+    "policy_id": null,
+    "question_revision": "coach-staged-v1"
+  },
+  "profiles": {
+    "legacy": {
+      "provider": "builtin",
+      "enabled": true,
+      "model": null,
+      "model_env": null,
+      "api_key_env": null,
+      "base_url": null,
+      "max_output_tokens": 160,
+      "timeout_seconds": 5,
+      "fallback_profile": null
+    },
+    "openai-test": {
+      "provider": "openai_responses",
+      "enabled": false,
+      "model": null,
+      "model_env": "COACH_OPENAI_MODEL",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": null,
+      "max_output_tokens": 160,
+      "timeout_seconds": 5,
+      "fallback_profile": "legacy"
+    },
+    "claude-test": {
+      "provider": "anthropic_messages",
+      "enabled": false,
+      "model": null,
+      "model_env": "COACH_ANTHROPIC_MODEL",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "base_url": null,
+      "max_output_tokens": 160,
+      "timeout_seconds": 5,
+      "fallback_profile": "legacy"
+    },
+    "local-test": {
+      "provider": "chat_completions",
+      "enabled": false,
+      "model": null,
+      "model_env": "COACH_LOCAL_MODEL",
+      "api_key_env": null,
+      "base_url": "http://127.0.0.1:11434/v1",
+      "max_output_tokens": 160,
+      "timeout_seconds": 5,
+      "fallback_profile": "legacy"
+    }
+  }
+}

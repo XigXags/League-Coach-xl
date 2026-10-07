@@ -12,6 +12,8 @@ Coach now loads the five completed [role research reports](artifacts/role-resear
 
 ## Setup
 
+The Jev and interchangeable LLM integration is now wired into the bot. See [MODEL_INTEGRATION.md](MODEL_INTEGRATION.md) for `/models`, `/model`, `/compare`, provider configuration and automatic scoreboard capture. Claude is optional and disabled by default. Generative profiles are comparison-only until a measured Jev guard calibration is supplied; live speech keeps the prepared Jev response. The longer roadmap remains under [jev_implementation/START_HERE.md](jev_implementation/START_HERE.md).
+
 1. Install Python 3.14 on Windows. The Python dependencies include an FFmpeg binary for voice playback.
 2. In this folder, run `python -m venv .venv`, then `.venv\Scripts\python -m pip install -r requirements.txt`.
 3. Create a Discord application and bot. Invite it to a server with `bot` and `applications.commands` scopes, plus Send Messages, Connect, and Speak permissions.
