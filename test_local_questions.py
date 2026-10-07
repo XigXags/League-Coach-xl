@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import bot as coach_bot
+from intent_router import IntentRouterError, Route
 from local_questions import answer_local_question, answer_tools, local_intent
 
 
@@ -80,6 +81,14 @@ class LocalAnswerTests(unittest.TestCase):
 
 
 class RoutingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_intent_failure_never_calls_jev_coach_path(self):
+        with patch.object(coach_bot, "route_question",
+                          side_effect=IntentRouterError("OpenAI unavailable")), \
+             patch.object(coach_bot, "coach") as jev_path:
+            answer = await coach_bot.make_answer(1, "Can you see the minimap?")
+        jev_path.assert_not_called()
+        self.assertIn("did not send it to JEV", answer)
+
     async def test_minimap_question_never_calls_jev_coach_path(self):
         watcher = SimpleNamespace(
             error=None,
@@ -89,6 +98,8 @@ class RoutingTests(unittest.IsolatedAsyncioTestCase):
         )
         with patch.object(coach_bot.bot, "minimap", watcher), \
              patch.object(coach_bot.bot.coordinators, "last_state", state()), \
+             patch.object(coach_bot, "route_question",
+                          return_value=Route("observe", ("visible_minimap",))), \
              patch.object(coach_bot, "coach") as jev_path:
             answer = await coach_bot.make_answer(1, "Who's on the minimap?")
         jev_path.assert_not_called()

@@ -23,7 +23,7 @@ from coach import (LESSON_TRIGGERS, NOTE_NOT_SAVED, Topic, active_champion, acti
                    is_noise, quick_intent, read_live_game, summarize_game)
 from coordinators import CoordinatorBoard
 from credentials import load_discord_token
-from intent_router import route_question
+from intent_router import IntentRouterError, route_question
 from local_hotkey import HotkeyCapture, input_devices
 from local_questions import answer_tools
 from minimap_reader import DEFAULT_RECT, MinimapWatcher
@@ -211,6 +211,12 @@ def live_teams() -> dict[str, list[str]] | None:
 
 async def make_answer(guild_id: int, question: str) -> str:
     started = time.perf_counter()
+    try:
+        route = await asyncio.to_thread(route_question, question)
+    except IntentRouterError as error:
+        print(f"Intent layer blocked request before JEV: {error}", flush=True)
+        return ("I couldn't classify that request through OpenAI, so I did not send it to JEV. "
+                "Check the intent logs and try again.")
     topic = live_topic(guild_id)
     command = quick_intent(question, topic.words if topic else ((), ()))
     if command and command[0] == "more":
@@ -218,12 +224,9 @@ async def make_answer(guild_id: int, question: str) -> str:
             # The next layer on the read already delivered: no feed read, no ranker, no board write.
             return explain(topic, command[1])
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
-    route = await asyncio.to_thread(route_question, question)
     route_details = f"Question route: {route.kind} via {route.source}"
     if route.tools:
         route_details += f"; tools={','.join(route.tools)}"
-    if route.diagnostic:
-        route_details += f"; fallback={route.diagnostic}"
     print(route_details, flush=True)
     if route.kind == "clarify":
         return route.clarification

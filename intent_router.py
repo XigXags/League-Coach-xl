@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.request
+import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-
-from local_questions import local_intent
-
+from urllib.parse import urlsplit
 
 TOOLS = {
     "active_champion": "The champion controlled by the local player.",
@@ -41,32 +42,23 @@ ROUTE_SCHEMA = {
     },
 }
 
-LOCAL_INTENT_TO_TOOL = {
-    "minimap": "visible_minimap",
-    "clock": "game_clock",
-    "roster": "match_roster",
-    "score": "scoreboard",
-    "self": "active_status",
-    "champion": "active_champion",
-    "gold": "team_gold_estimate",
-}
-
-
 @dataclass(frozen=True)
 class Route:
     kind: str
     tools: tuple[str, ...] = ()
     clarification: str = ""
-    source: str = "fallback"
-    diagnostic: str = ""
+    source: str = "llm"
 
 
-def _fallback(question: str, diagnostic: str = "") -> Route:
-    intent = local_intent(question)
-    if intent:
-        return Route("estimate" if intent == "gold" else "observe",
-                     (LOCAL_INTENT_TO_TOOL[intent],), source="rules", diagnostic=diagnostic)
-    return Route("decision", source="rules", diagnostic=diagnostic)
+class IntentRouterError(RuntimeError):
+    """A question could not be authoritatively classified by the configured intent model."""
+
+
+def _log(event: str, **details: object) -> None:
+    stamp = datetime.now().astimezone().isoformat(timespec="milliseconds")
+    suffix = " ".join(f"{name}={value}" for name, value in details.items()
+                      if value is not None and value != "")
+    print(f"[{stamp}] [intent] {event}" + (f" {suffix}" if suffix else ""), flush=True)
 
 
 def _api_key() -> str:
@@ -105,15 +97,20 @@ def _validate(value: dict) -> Route:
 
 
 def route_question(question: str, *, timeout: float = 8.0) -> Route:
-    """Ask a configured OpenAI-compatible chat model to choose retrieval tools.
+    """Require the configured OpenAI model to choose retrieval tools.
 
-    The model receives no game state and cannot name arbitrary tools. Invalid output or an unavailable
-    router falls back to the conservative rule router.
+    The model receives no game state and cannot name arbitrary tools. Failure raises IntentRouterError;
+    callers must not silently bypass this layer or invoke the prediction engine.
     """
     url = os.getenv("COACH_ROUTER_URL", "").strip()
     model = os.getenv("COACH_ROUTER_MODEL", "").strip()
+    request_id = uuid.uuid4().hex[:8]
     if not url or not model:
-        return _fallback(question)
+        missing = ",".join(name for name, value in (
+            ("COACH_ROUTER_URL", url), ("COACH_ROUTER_MODEL", model)
+        ) if not value)
+        _log("configuration_failed", request_id=request_id, missing=missing)
+        raise IntentRouterError(f"missing router configuration: {missing}")
     system = (
         "You route League of Legends player questions. Return exactly one JSON object with keys "
         "kind, tools, and clarification. kind is observe, estimate, decision, or clarify. "
@@ -133,18 +130,40 @@ def route_question(question: str, *, timeout: float = 8.0) -> Route:
             {"role": "user", "content": question},
         ],
     }
+    started = time.perf_counter()
+    _log("request_start", request_id=request_id, provider="openai", model=model,
+         endpoint=urlsplit(url).netloc, timeout_seconds=timeout, question_chars=len(question))
     try:
         headers = {"Content-Type": "application/json"}
         key = _api_key()
-        if key:
-            headers["Authorization"] = f"Bearer {key}"
+        if not key:
+            raise ValueError("OpenAI API key is empty")
+        headers["Authorization"] = f"Bearer {key}"
+        _log("request_send", request_id=request_id, schema=ROUTE_SCHEMA["name"],
+             allowed_tools=len(TOOLS), max_completion_tokens=payload["max_completion_tokens"])
         request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
                                          headers=headers, method="POST")
         with urllib.request.urlopen(request, timeout=timeout) as response:
+            status = getattr(response, "status", None)
+            response_headers = getattr(response, "headers", None)
+            openai_request_id = response_headers.get("x-request-id") if response_headers else None
             body = json.load(response)
+        usage = body.get("usage", {}) if isinstance(body, dict) else {}
+        _log("response_received", request_id=request_id, status=status,
+             openai_request_id=openai_request_id,
+             latency_ms=round((time.perf_counter() - started) * 1000),
+             prompt_tokens=usage.get("prompt_tokens"),
+             completion_tokens=usage.get("completion_tokens"), total_tokens=usage.get("total_tokens"))
         content = body["choices"][0]["message"]["content"]
-        return _validate(_json_content(content))
+        route = _validate(_json_content(content))
+        _log("classification_complete", request_id=request_id, kind=route.kind,
+             tools=",".join(route.tools) or "none", clarification=bool(route.clarification))
+        return route
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
         status = getattr(error, "code", None)
-        diagnostic = type(error).__name__ + (f":{status}" if status is not None else "")
-        return _fallback(question, diagnostic)
+        reason = getattr(error, "reason", None)
+        _log("request_failed", request_id=request_id, error=type(error).__name__, status=status,
+             reason=str(reason or error).replace("\r", " ").replace("\n", " ")[:160],
+             latency_ms=round((time.perf_counter() - started) * 1000), action="blocked_before_jev")
+        diagnostic = type(error).__name__ + (f" HTTP {status}" if status is not None else "")
+        raise IntentRouterError(f"OpenAI intent classification failed ({diagnostic})") from error

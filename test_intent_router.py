@@ -4,7 +4,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from intent_router import route_question
+from intent_router import IntentRouterError, route_question
 
 
 class Response(io.BytesIO):
@@ -16,11 +16,10 @@ class Response(io.BytesIO):
 
 
 class RouterTests(unittest.TestCase):
-    def test_rules_route_known_fact_without_configuration(self):
+    def test_missing_configuration_is_not_silently_bypassed(self):
         with patch.dict(os.environ, {}, clear=True):
-            route = route_question("What champion am I playing?")
-        self.assertEqual((route.kind, route.tools, route.source),
-                         ("observe", ("active_champion",), "rules"))
+            with self.assertRaises(IntentRouterError):
+                route_question("What champion am I playing?")
 
     def test_llm_selects_multiple_allowed_tools(self):
         body = {"choices": [{"message": {"content": json.dumps({
@@ -37,6 +36,7 @@ class RouterTests(unittest.TestCase):
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
+            "COACH_ROUTER_API_KEY": "test-key",
         }, clear=True), patch("urllib.request.urlopen", side_effect=respond):
             route = route_question("Who am I and how long has this game gone?")
         self.assertEqual(route.kind, "observe")
@@ -46,35 +46,35 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(captured[0]["max_completion_tokens"], 128)
         self.assertTrue(captured[0]["response_format"]["json_schema"]["strict"])
 
-    def test_unknown_tool_is_rejected_and_falls_back(self):
+    def test_unknown_tool_is_rejected_without_rules_fallback(self):
         body = {"choices": [{"message": {"content": json.dumps({
             "kind": "observe", "tools": ["read_everything"], "clarification": ""
         })}}]}
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
+            "COACH_ROUTER_API_KEY": "test-key",
         }, clear=True), patch("urllib.request.urlopen", return_value=Response(json.dumps(body).encode())):
-            route = route_question("What champion am I playing?")
-        self.assertEqual((route.source, route.tools), ("rules", ("active_champion",)))
+            with self.assertRaises(IntentRouterError):
+                route_question("What champion am I playing?")
 
-    def test_missing_key_file_falls_back_without_breaking_the_bot(self):
+    def test_missing_key_file_blocks_routing(self):
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
             "COACH_ROUTER_API_KEY_FILE": "Z:\\missing\\router-key.txt",
         }, clear=True):
-            route = route_question("What champion am I playing?")
-        self.assertEqual((route.source, route.tools), ("rules", ("active_champion",)))
-        self.assertEqual(route.diagnostic, "FileNotFoundError")
+            with self.assertRaises(IntentRouterError):
+                route_question("What champion am I playing?")
 
-    def test_api_failure_still_routes_minimap_capability_question_locally(self):
+    def test_api_failure_does_not_guess_minimap_intent_or_reach_jev(self):
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
+            "COACH_ROUTER_API_KEY": "test-key",
         }, clear=True), patch("urllib.request.urlopen", side_effect=OSError("offline")):
-            route = route_question("Can you see the minimap?")
-        self.assertEqual((route.kind, route.tools, route.source, route.diagnostic),
-                         ("observe", ("visible_minimap",), "rules", "OSError"))
+            with self.assertRaises(IntentRouterError):
+                route_question("Can you see the minimap?")
 
     def test_forward_play_call_routes_to_jev(self):
         body = {"choices": [{"message": {"content": json.dumps({
@@ -83,6 +83,7 @@ class RouterTests(unittest.TestCase):
         with patch.dict(os.environ, {
             "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
             "COACH_ROUTER_MODEL": "router-model",
+            "COACH_ROUTER_API_KEY": "test-key",
         }, clear=True), patch("urllib.request.urlopen", return_value=Response(json.dumps(body).encode())):
             route = route_question("Should we contest dragon?")
         self.assertEqual((route.kind, route.source), ("decision", "llm"))
