@@ -219,8 +219,13 @@ async def make_answer(guild_id: int, question: str) -> str:
             return explain(topic, command[1])
         question = DEFAULT_QUESTION   # nothing recent to explain, so a fresh read
     route = await asyncio.to_thread(route_question, question)
+    route_details = f"Question route: {route.kind} via {route.source}"
+    if route.tools:
+        route_details += f"; tools={','.join(route.tools)}"
+    if route.diagnostic:
+        route_details += f"; fallback={route.diagnostic}"
+    print(route_details, flush=True)
     if route.kind == "clarify":
-        print("Question route: clarify", flush=True)
         return route.clarification
     if route.kind in {"observe", "estimate"}:
         state = bot.coordinators.last_state

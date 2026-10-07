@@ -8,6 +8,7 @@ from typing import Any
 
 
 MINIMAP_PATTERNS = (
+    re.compile(r"\b(?:can|could|do) you (?:see|read|view)\b.*\bmini\s*map\b", re.I),
     re.compile(r"\bwho(?:'s| is| do you see| can you see).*\bmini\s*map\b", re.I),
     re.compile(r"\b(?:who|what).*\b(?:visible|showing|shown|on)\b.*\bmini\s*map\b", re.I),
     re.compile(r"\bmini\s*map\b.*\b(?:who|visible|showing|shown|see)\b", re.I),

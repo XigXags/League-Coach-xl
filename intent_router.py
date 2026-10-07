@@ -58,14 +58,15 @@ class Route:
     tools: tuple[str, ...] = ()
     clarification: str = ""
     source: str = "fallback"
+    diagnostic: str = ""
 
 
-def _fallback(question: str) -> Route:
+def _fallback(question: str, diagnostic: str = "") -> Route:
     intent = local_intent(question)
     if intent:
         return Route("estimate" if intent == "gold" else "observe",
-                     (LOCAL_INTENT_TO_TOOL[intent],), source="rules")
-    return Route("decision", source="rules")
+                     (LOCAL_INTENT_TO_TOOL[intent],), source="rules", diagnostic=diagnostic)
+    return Route("decision", source="rules", diagnostic=diagnostic)
 
 
 def _api_key() -> str:
@@ -143,5 +144,7 @@ def route_question(question: str, *, timeout: float = 8.0) -> Route:
             body = json.load(response)
         content = body["choices"][0]["message"]["content"]
         return _validate(_json_content(content))
-    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return _fallback(question)
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        status = getattr(error, "code", None)
+        diagnostic = type(error).__name__ + (f":{status}" if status is not None else "")
+        return _fallback(question, diagnostic)

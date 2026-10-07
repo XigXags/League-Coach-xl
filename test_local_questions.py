@@ -29,7 +29,7 @@ def state():
 class IntentTests(unittest.TestCase):
     def test_minimap_phrasings_are_local(self):
         for question in ("Who's on the minimap?", "Who can you see on the mini map?",
-                         "Minimap, who is showing?"):
+                         "Minimap, who is showing?", "Can you see the minimap?"):
             self.assertEqual(local_intent(question), "minimap")
 
     def test_tactical_question_falls_through(self):

@@ -65,6 +65,16 @@ class RouterTests(unittest.TestCase):
         }, clear=True):
             route = route_question("What champion am I playing?")
         self.assertEqual((route.source, route.tools), ("rules", ("active_champion",)))
+        self.assertEqual(route.diagnostic, "FileNotFoundError")
+
+    def test_api_failure_still_routes_minimap_capability_question_locally(self):
+        with patch.dict(os.environ, {
+            "COACH_ROUTER_URL": "https://router.invalid/v1/chat/completions",
+            "COACH_ROUTER_MODEL": "router-model",
+        }, clear=True), patch("urllib.request.urlopen", side_effect=OSError("offline")):
+            route = route_question("Can you see the minimap?")
+        self.assertEqual((route.kind, route.tools, route.source, route.diagnostic),
+                         ("observe", ("visible_minimap",), "rules", "OSError"))
 
     def test_forward_play_call_routes_to_jev(self):
         body = {"choices": [{"message": {"content": json.dumps({
