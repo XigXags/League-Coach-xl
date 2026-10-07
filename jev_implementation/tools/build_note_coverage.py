@@ -23,7 +23,7 @@ def stage(number: int) -> str:
     if in_ranges(number, ((32, 35), (47, 57), (66, 70), (79, 84), (132, 135), (153, 155))):
         return "C-split-ranker-and-state"
     if in_ranges(number, ((1, 19), (40, 46), (58, 64), (71, 78), (92, 97), (107, 112), (140, 141), (150, 151,))):
-        return "D-routing-and-Claude"
+        return "D-routing-and-selected-LLM"
     if in_ranges(number, ((38, 39), (44, 44), (80, 81), (88, 91), (98, 100), (142, 149))):
         return "A-transport-and-observability"
     if in_ranges(number, ((41, 49), (116, 131), (144, 145), (152, 152))):
@@ -47,7 +47,7 @@ def resolution(number: int) -> str:
         25: "Feedback UI is intentionally unresolved; keep neutral label schema.",
         31: "Include none-fits and near misses; selected-answer fit gates speaking.",
         36: "Answer-library generation remains paused pending sourcing and review.",
-        40: "Claude produces plain speech; Jev guards the line.",
+        40: "Selected generative provider produces plain speech; Jev guards every line, including follow-ups.",
         70: "Move role guidance into documented instructions; reject undocumented sibling fields.",
         94: "Use option probabilities/top-two gap for selection; whole-answer confidence is a trust gate.",
         111: "Gate the selected answer's fit, not max fit over any candidate.",
@@ -57,7 +57,7 @@ def resolution(number: int) -> str:
         152: "Review applicable agreements before setting retention policy.",
         156: "Keep deterministic order until option-permutation sensitivity is measured.",
     }
-    return special.get(number, "See IMPLEMENTATION_PLAN.md for the stage gate and test obligation.")
+    return special.get(number, "See IMPLEMENTATION_PLAN.md; source Claude mentions mean the selected generative provider. Stage 0 adds profile switching independently of Jev.")
 
 
 def main() -> None:

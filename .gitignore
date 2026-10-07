@@ -18,3 +18,9 @@ artifacts/riot-timelines/
 artifacts/bot-restarts/
 transcripts/worlds2025.zip
 transcripts/games/
+public_export/
+coach_models.json
+model_selections.json
+evals/runs/
+artifacts/scoreboards/
+artifacts/scoreboard-verification/

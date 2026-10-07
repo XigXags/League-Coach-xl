@@ -1974,7 +1974,7 @@ class ChampionKitPayloadTests(FlaggedCase):
                 return False
 
             def read(self, *args):
-                return b'{"answers": {"next_play": {"probabilities": {"a": 0.7}}}}'
+                return b'{"model":"jev-1.13.0","usage":{},"answers":{"next_play":{"type":"choice","choice":"a","confidence":0.8,"probabilities":{"a":0.7,"b":0.3}}}}'
 
         def fake_open(request, timeout=None):
             captured.update(json.loads(request.data))
@@ -1982,12 +1982,13 @@ class ChampionKitPayloadTests(FlaggedCase):
 
         with patch("coach.urllib.request.urlopen", side_effect=fake_open):
             scores = jev_rank({"game": {}}, "secret", (Option("a", "A", "r"), Option("b", "B", "r")))
-        self.assertEqual(scores, {"a": 0.7, "b": 0.0})
-        rule = captured["questions"]["next_play"]["role_rule"]
-        self.assertTrue(rule.endswith(
+        self.assertEqual(scores, {"a": 0.7, "b": 0.3})
+        rule = captured["questions"]["next_play"]["instructions"]
+        self.assertNotIn("role_rule", captured["questions"]["next_play"])
+        self.assertIn(
             "champion_kits are Riot's static kit descriptions plus, as player_note, the player's own words on how "
             "they play the champion; they say what a champion can do, never what is ready, stacked or happening "
-            "now, and they are background to weigh against the observed state, not a script."), rule)
+            "now, and they are background to weigh against the observed state, not a script.", rule)
 
 
 if __name__ == "__main__":

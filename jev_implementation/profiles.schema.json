@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coach model profile configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "default_profile", "turn_deadline_seconds", "jev", "profiles"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "default_profile": {"type": "string", "minLength": 1},
+    "turn_deadline_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "jev": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "credential_source", "policy_id", "question_revision"],
+      "properties": {
+        "model": {"type": "string", "minLength": 1},
+        "credential_source": {"const": "existing_jev_loader"},
+        "policy_id": {"type": ["string", "null"], "minLength": 1},
+        "question_revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_-]*$"},
+      "additionalProperties": {"$ref": "#/$defs/profile"}
+    }
+  },
+  "$defs": {
+    "reference": {"type": ["string", "null"], "minLength": 1},
+    "environment": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "enabled", "model", "model_env", "api_key_env", "base_url", "max_output_tokens", "timeout_seconds", "fallback_profile"],
+      "properties": {
+        "provider": {"enum": ["builtin", "openai_responses", "anthropic_messages", "chat_completions"]},
+        "enabled": {"type": "boolean"},
+        "model": {"$ref": "#/$defs/reference"},
+        "model_env": {"$ref": "#/$defs/environment"},
+        "api_key_env": {"$ref": "#/$defs/environment"},
+        "base_url": {"type": ["string", "null"], "pattern": "^https?://"},
+        "max_output_tokens": {"type": "integer", "minimum": 1},
+        "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "fallback_profile": {"$ref": "#/$defs/reference"}
+      },
+      "not": {"properties": {"model": {"type": "string"}, "model_env": {"type": "string"}}, "required": ["model", "model_env"]}
+    }
+  }
+}

@@ -1,69 +1,69 @@
-# Coach Jev implementation plan
+# Coach integration implementation plan
 
-## Current baseline
+This replaces the Claude-only plan. Preparation is complete; the owner requested a readiness report before runtime implementation.
 
-The current live Coach ranker makes one direct HTTP Choice call in `coach.py:jev_rank`, uses only the probability map, and turns malformed/missing probabilities into zeros. The bot has deterministic intent/plan handling and deferred board commits, but `bot.py:accept` commits before the subsequent Discord send is awaited. These are the two highest-value integration seams. The current runtime remains unchanged in this staging pass.
+## Integration seams
 
-## Design boundaries
+- `coach.py:jev_rank`: replace broad direct HTTP Choice with a validated transport; move undocumented `role_rule` into documented instructions; preserve model/usage/confidence and reject missing probabilities instead of filling with zero.
+- `coach.py:coach`: create one named snapshot from current game, plan, champion kits, coordinator notes, role/reference lessons and minimap observations; retrieve focused context instead of dumping every playbook.
+- `bot.py:make_answer`: preserve responsive handling while adding cancellable async model transports.
+- `bot.py:accept`: currently commits before the awaited Discord send. Move commits after successful delivery and identity recheck, with tests for failed sends and interruptions.
+- Preserve code-owned notes, plans, topic, role playbooks, stop/more/track behavior, two alternatives, concise speech, full chat and voice/hotkey settings.
 
-Jev is for bounded judgments. Claude is for reasoning and plain spoken wording. Code owns arithmetic, timers, dates, counts, eligibility, patch rules, retries, cancellation, persistence, and delivery identity. Retrieved text, player speech, and player-reported facts are untrusted data; instructions in those fields are never treated as system policy.
+## Stage 0 — profiles and switching
 
-Every evaluation carries a named state snapshot with `player_question`, observed facts, computed facts, timestamped player reports, current plan, references/citations, and the candidate or line being judged. Facts retain source and freshness. The same snapshot is used for independent fan-out questions; a second call is used only when candidate text or other evidence was fetched after the first call.
+Implement `model_profiles.py` and ignored runtime `coach_models.json` from the staged template/schema. Keep Jev's judgment model separate from the selected generator. Add `/models`, `/model` status, `/model use:<profile>` and `/model reset`. Restrict shared guild changes to Manage Server users; inspection is available to everyone. Use autocomplete, not a fixed slash enum. Persist guild selections atomically in an ignored local file.
 
-## Stage A — transport and contract (foundation is staged)
+Resolve and freeze the profile once per turn. Switching stops speech, invalidates in-flight request/model revision, and clears pending generated follow-ups. Preserve board/plan/reports and the already delivered topic. A later elaboration uses the new provider with the dated delivered snapshot; a fresh read is marked as fresh.
 
-Target files: `jev_implementation/foundation/contracts.py`, new `jev_service.py`, `coach.py` adapter seam, and offline tests.
+Gate: unknown, disabled or misconfigured profiles leave the old selection intact. Restart restores selection, guilds are isolated, status exposes no secrets or paid calls. Explicit `legacy` profile restores current behavior. No silent provider/model substitution.
 
-Implement a typed transport with a monotonic deadline and cancellation. Use a pinned versioned model during calibration. Preserve the response envelope and request fingerprint. Validate the API bounds: Choice 2–255 options, Score 2–10 ordered levels, Noul yes probability, exact answer IDs, finite values, valid probability mass, and Score expectation. Put all guidance inside documented `instructions` or criteria objects. Keep the question revision and policy ID alongside results.
+## Stage A — transports and traces
 
-Gate: malformed 200, timeout, cancellation, 401, 422, 429, 529, retry-after, missing probabilities, wrong answer IDs, and model mismatch all produce safe fallback behavior in tests. No live bot path changes yet.
+Implement runtime package modules `jev_service.py`, `llm_provider.py`, `providers/openai_responses.py`, `providers/anthropic_messages.py`, `providers/chat_completions.py`. Audit/reuse `foundation/contracts.py`; remove reliance on PYTHONPATH hacks. Native APIs have native parsing. Only send parameters the chosen adapter/model supports.
 
-## Stage B — labeled evaluation and policies
+Normalize plain text, requested and returned model, provider request ID, finish/refusal status, optional usage, latency and retries. Empty, truncated, refused or malformed output is not a completed answer. Use one monotonic turn deadline across routing, generation, guarding and at most one rewrite. Cancellation is checked before/after awaits. Honor Retry-After within the deadline and only retry documented transient errors; Jev 401/422 are not retries, 429/529 may be.
 
-Target files: new `evals/` fixture format, calibration script, policy artifact loader, and tests.
+Log profile/revision, models, question/prompt revisions, fingerprint, route, probabilities, timings, tokens and fallback reason. No secrets or raw player content in default telemetry. Missing usage/pricing means unknown, not zero. Credential environment references resolve only for their own explicitly configured provider endpoint.
 
-Create real Coach examples with labels for intent, response type, candidate fit, unsupported location/number/rule, unanswered question, option parroting, severity, mutation confirmation, and should-speak. Include “none fits” and near misses. Repeat exact inputs, perturb irrelevant fields, and permute Choice options. Track correctness, coverage, false action, fallback burden, calibration, latency, tokens, and retry rate. Thresholds are per action and error cost; never copy cookbook cutoffs.
+Gate: offline fixtures for malformed 200, missing/extra/NaN probabilities, wrong IDs, timeouts, cancellation, refusal, truncation, retries and provider shapes. Live smoke tests verify configured account access separately. Declared fallbacks are visible and receive the same checks.
 
-Gate: a frozen held-out set demonstrates the selected policy; the calibration artifact names model version and question revision; a stale/missing policy refuses to act. Owner feedback UI remains an adapter-neutral label contract until chosen.
+## Stage B — cases and policies
 
-## Stage C — split ranker
+Implement labelled replay cases, comparison runner and versioned policy artifacts using `EVALUATION.md`. Include none-fits/near misses, stale reports, early objective, plan mutations, corrections, stop and follow-ups. Synthetic cases check invariants; they are not measured player accuracy.
 
-Target files: `coach.py` ranker seam, new question definitions, candidate eligibility tests.
+Calibrate per-action intent/fit/hazard/severity gates on development labels; check held-out data. Bind policy to Jev resolved version and question revision, and record generator/prompt evaluation scope. A new generator needs evaluation eligibility; changing it does not mathematically invalidate unchanged Jev calibration by itself. Untested profiles may run offline/shadow, never bypass absent live gates.
 
-Keep deterministic `two_options` eligibility and hard safety. Ask focused Score/Noul judgments for safety, role fit, tempo/immediacy, payoff, and unseen assumptions in one shared state. Normalize ordered scores in code, apply `/approach` weights in code, inspect components, and preserve top-two probabilities. Compare broad and split rankers with option-order and state-ablation tests.
+Gate: correctness, false action, unsupported claims, none-fits errors, coverage, fallback burden, latency and usage. Test identical repeats, harmless perturbations and option permutations separately. No cookbook thresholds are production defaults.
 
-Gate: no impossible or unsupported option survives a high Jev payoff; split ranker improves or matches held-out decisions and latency within the measured budget; rollback remains one configuration switch.
+## Stage C — state and independent judgments
 
-## Stage D — input routing and Claude
+Implement `coach_state.py`, `jev_questions.py`, `play_scoring.py` per `INTERFACES.md`. Preserve observed/computed/player-reported/reference sources and expiry. A role field is not coordinates; champion ability text is not readiness; minimap detections retain timestamp/confidence.
 
-Target files: new `routing.py`, `claude_adapter.py`, `coach.py`/`bot.py` integration tests.
+Apply deterministic eligibility before Jev. Batch independent safety, role-fit, immediacy, payoff and unsupported-premise questions over one snapshot. Normalize scores and apply `/approach` weights in code. Keep distributions and none-fits. Second requests need a genuine evidence dependency. Benchmark context trimming and remove the eight-option cutoff's ability to hide a triggered play.
 
-Route deterministic stop/more/track commands first. Fan out intent, desired options, plan-change request, and difficulty/fit checks where they share the same snapshot. Clarify low-confidence cases, send `other` and difficult cases to Claude, and require confirmation for middle-band mutations. Claude receives a small topic brief and returns only plain speech. Jev guards input and every output line. A review hazard gets one rewrite; high severity or a second failure falls back.
+Gate: no high score revives an impossible play; score edges do not prove lane priority. Expired/corrected player reports are removed. Compare against the broad ranker before replacement.
 
-Gate: generated lines never bypass output checks; “options” lines do not blindly repeat prepared hints; no Claude structured-response parsing is introduced.
+## Stage D — provider-neutral routing and speech
 
-## Stage E — evidence, retrieval, and library (paused)
+Implement `routing.py`, `brief_builder.py`, `coach_pipeline.py`. Deterministic stop/more/track first; batch independent intent, response-shape, fit and action-risk checks. Uncertain/other cases clarify or use the selected generative provider with a small topical brief.
 
-Target files: evidence contracts, retrieval adapter, library fixtures only after owner decision.
+Generate plain speech only; code owns metadata and proposed effects. Generate initial line, then elaboration on request. Tactical calls require two supported alternatives. Jev checks input and every generated output/follow-up. Allow one bounded rewrite, then an explicit safe/prepared fallback. Never stream unverified generated tokens to Discord or TTS; approved lines may stream audio as today.
 
-Keep observed, player-reported, and reference facts separate. Expire reports by match/time. If library work resumes, first measure cheap shortlist recall, then Jev candidate fit and selected-answer suitability, not `max(any fit)`. Keep `none fits`, source IDs, provenance, patch freshness, and injection/premise checks. Preserve original entries during dedupe and send ambiguous pairs to review.
+Gate: models cannot save notes or change plans directly; prepared hints can be ignored. Check the selected answer's fit, not the maximum fit of another candidate. Stop cancels any stage and prevents late commits.
 
-Gate: no library answer is spoken automatically without selected-answer fit, current-state support, output guard, and delivery identity. Until the owner decides sourcing/quality, the library remains an empty or fixture-only dependency.
+## Stage E — references and reports
+
+Implement timestamped player reports, role/reference retrieval and support checks. Read all five role reports at startup, then retrieve the relevant brief each turn. Preserve source IDs and originals for current lessons, pro tendencies, kits and champion notes.
+
+Source notes 25/36 keep library generation/feedback decisions paused. Once selected, compare shortlist recall for BM25/keyword and meaning-based retrieval; do not compare probabilities from independent chunks as if jointly normalized. Compound splitting/extraction is separate validated work, never implicit mutations. Autoresearch waits for enough genuine labelled outcomes.
+
+Gate: no invented location/camp/number or stale report promoted to observation. Historical tendencies stay background. No bulk job runs as part of a normal voice request.
 
 ## Stage F — delivery and pilot
 
-Target files: `bot.py`, `coach.py`, observability sink, pilot configuration.
+After Discord text succeeds, recheck guild/session/request/model revision/match serial under the session lock, then commit staged effects exactly once. Failed send, stop, switch or restart leaves them untouched. Reject superseded speech. Keep a rollback switch to current behavior.
 
-After Discord send succeeds, recheck guild/session/request version, match key/serial, and single-commit status under the session lock, then commit board/topic/note. A stop, newer request, match restart, or failed send leaves state unchanged. Keep automatic proactive speech disabled until separately evaluated.
+Start new paths in shadow mode and enable evaluated profiles individually. Explicit `/compare` uses a frozen snapshot, bounded requested profiles and request budget; labelled results go to text, with no speech or plan/note commits. Normal voice calls use one selected generator. Validate quality and first-approved-audio timing with the owner in a real match. Proactive voice is a later deduplicated, calibrated experiment.
 
-Gate: all existing tests plus new cancellation/delivery tests pass; shadow mode has measured quality, latency, tokens, and fallback; a kill switch restores the current ranker and deterministic speech.
-
-## Explicit conflict resolutions
-
-- Notes 20–24 describe retrieval/reranking; notes 26–31 describe a later meaning-based two-pass Choice. Stage A/B benchmark both. Do not enable both or assume cross-chunk probabilities are comparable.
-- Notes 25 and 36 are owner decisions. Stage neutral interfaces and fixtures only; do not pick the feedback UI or generate the library.
-- Notes 40 and 141 coexist by separating roles: Claude speech remains plain text; a future compound-request splitter may be a separate generative extractor whose output is validated before any action.
-- Notes 58, 71, 72, 94, and 151 distinguish Choice winner/probabilities from whole-answer confidence. Use `choice`/probabilities to select, confidence and calibrated top-two checks to decide whether to trust.
-- Notes 73, 74, and 154 keep Score/Noul semantics separate. Never treat a Noul near 0.5 as a medium amount; never use a Score as exact arithmetic.
-- Notes 98–100 and 140 support fan-out only where the initial state contains enough evidence. Candidate-dependent checks remain a second request.
-- Notes 142–149 supersede older model/pricing assumptions. Pin/log the resolved model and measure current usage; do not copy old cookbook prices or thresholds.
+Prepared files are docs, templates, shared prompt, interface/evaluation contracts and complete note coverage. Runtime modules above are future targets; no empty runtime stubs are imported by the live bot.
